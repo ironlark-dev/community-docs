@@ -11,7 +11,7 @@ Setup steps will firm up as the launcher and tooling land.
 
 ## Prerequisites
 
-- A running RPP environment (the game client/host).
+- A running Ironlark environment (the game client/host).
 - For map authoring: Blender (with glTF export).
 - For mod authoring: a Rust toolchain with the `wasm32-wasip2` target.
 

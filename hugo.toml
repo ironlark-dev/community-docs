@@ -1,5 +1,5 @@
-baseURL = "https://docs.rpp.example/"
-title = "RPP"
+baseURL = "https://docs.ironlark.example/"
+title = "Ironlark"
 enableRobotsTXT = true
 defaultContentLanguage = "en"
 
@@ -29,7 +29,7 @@ defaultContentLanguage = "en"
     noClasses = false
 
 [params]
-  github_repo = "https://git.ywa.red/gamedev/rpp"
+  github_repo = "https://git.ywa.red/gamedev/ironlark"
   [params.ui]
     sidebar_menu_compact = true
     navbar_logo = false
