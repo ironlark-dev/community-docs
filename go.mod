@@ -1,4 +1,4 @@
-module github.com/ywa/rpp-community-docs
+module github.com/ywa/ironlark-community-docs
 
 go 1.23
 

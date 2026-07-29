@@ -5,7 +5,7 @@ title: Players, Identities & Entities
 
 # Players, Identities & Entities
 
-RPP keeps **who you are** separate from **what you're controlling**. That split is
+Ironlark keeps **who you are** separate from **what you're controlling**. That split is
 the foundation everything else builds on — spectators, respawns, alt-characters,
 NPCs, vehicles, hidden roles. This page explains the model.
 

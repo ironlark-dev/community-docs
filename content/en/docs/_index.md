@@ -3,13 +3,13 @@ sidebar_position: 1
 title: Welcome
 ---
 
-# RPP
+# Ironlark
 
-RPP is a moddable multiplayer game platform. The engine is a thin **host** that
+Ironlark is a moddable multiplayer game platform. The engine is a thin **host** that
 provides mechanism — maps, physics, networking, a modding runtime — and
 **everything else is content you make**: maps, mods, and gamemodes.
 
-This site is the **community guide to building on RPP**. (Engine internals and
+This site is the **community guide to building on Ironlark**. (Engine internals and
 design records live separately, in the project's design wiki.)
 
 ## What you can build
@@ -33,6 +33,6 @@ distributable bundle containing `maps/` and `mods/`. Everything is addressed as
 Start with [Getting Started](/getting-started).
 
 :::note
-RPP is in active development; APIs and guides will change. Pages marked
+Ironlark is in active development; APIs and guides will change. Pages marked
 *work in progress* are still settling.
 :::
