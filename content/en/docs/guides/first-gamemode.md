@@ -1,0 +1,288 @@
+---
+title: "Write your first gamemode"
+linkTitle: "First gamemode"
+weight: 5
+description: >
+  From an empty directory to a gamemode that places players, in seven files.
+  Every step here was run against the engine, and the log output is the real one.
+---
+
+A gamemode is an ordinary mod that the server designates as the session's rule layer. The
+smallest useful one takes over spawning: it tells the host to stop placing players, then
+places them itself.
+
+## The files
+
+Under your content root — `assets/workshop/` beside the game, or wherever `--content`
+points — create a namespace, an addon marker, and a mod directory:
+
+```text
+workshop/
+  tutorial/                       # your namespace
+    addon.toml                    # marks this an addon root
+    mods/
+      hellomode/                  # the mod; this name IS its identity
+        mod.toml
+        Cargo.toml
+        .cargo/config.toml
+        wit/
+          world.wit
+          deps/ironlark-host/host.wit    # a copy of the host's contract
+        server/
+          Cargo.toml
+          src/lib.rs
+```
+
+Your mod is now `tutorial:hellomode` — **identity comes from the path**, never from a
+manifest, so nothing in the files below repeats the name.
+
+`addon.toml`:
+
+```toml
+version = "0.1.0"
+```
+
+`mod.toml` — the `roles` line is what makes this a gamemode candidate rather than an
+ordinary mod:
+
+```toml
+[mod]
+version = "0.1.0"
+
+[provides]
+roles = ["gamemode"]
+```
+
+`Cargo.toml` — a tiny workspace, because a mod may later grow a `client/` half beside the
+server one:
+
+```toml
+[workspace]
+resolver = "2"
+members = ["server"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+[workspace.dependencies]
+wit-bindgen = "0.58"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+```
+
+`.cargo/config.toml` — pin the target. This is not optional convenience:
+
+```toml
+[build]
+target = "wasm32-wasip2"
+```
+
+{{% alert title="Why the target must be pinned" color="info" %}}
+Without it a plain `cargo build` targets your native platform, and the async export symbols
+the bindings generate break the native linker rather than failing with anything helpful.
+{{% /alert %}}
+
+`wit/world.wit` — just a package name for your own WIT directory:
+
+```wit
+package ironlark:hellomode@0.1.0;
+```
+
+`wit/deps/ironlark-host/host.wit` — a **copy** of the host's contract. Take it from the
+engine's `src/plugins/modding/wit/host.wit`. It must match the host you run against; a stale
+copy fails to instantiate without a useful message.
+
+`server/Cargo.toml`:
+
+```toml
+[package]
+name = "hellomode-server"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wit-bindgen = { workspace = true }
+```
+
+## The code
+
+`server/src/lib.rs`. The interesting part is eleven lines; the rest is the contract.
+
+```rust
+wit_bindgen::generate!({
+    path: "../wit",
+    world: "ironlark:host/server-mod",
+});
+
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use exports::ironlark::host::server_api::Guest;
+use ironlark::host::entity::{SpawnTransform, Vec3, control, spawn};
+use ironlark::host::gamemode::set_default_spawn;
+use ironlark::host::log::{Level, log};
+use ironlark::host::map_api::list_spawns;
+
+struct Component;
+
+/// Spread joiners over the map's spawn points instead of stacking them.
+static NEXT: AtomicUsize = AtomicUsize::new(0);
+
+impl Guest for Component {
+    async fn init() {
+        // We place players, so the host must stop doing it. In init, because the
+        // host holds joins until every server mod has loaded — do this later and
+        // the first player is already spawned.
+        set_default_spawn(false);
+        log(Level::Info, "hellomode: init, we own spawn now");
+    }
+
+    async fn on_player_join(player_id: String) {
+        let spawns = list_spawns().await; // never empty
+        let point = &spawns[NEXT.fetch_add(1, Ordering::Relaxed) % spawns.len()];
+        let at = SpawnTransform {
+            position: Vec3 {
+                x: point.position.x,
+                y: point.position.y,
+                z: point.position.z,
+            },
+            yaw: point.yaw,
+        };
+
+        // Two steps, always: an entity exists, then someone drives it.
+        let body = match spawn("core:character".into(), at).await {
+            Ok(body) => body,
+            Err(e) => {
+                log(Level::Error, &format!("hellomode: spawn failed: {e}"));
+                return;
+            }
+        };
+        if let Err(e) = control(player_id.clone(), &body).await {
+            log(Level::Error, &format!("hellomode: control failed: {e}"));
+            return;
+        }
+        log(
+            Level::Info,
+            &format!("hellomode: spawned and controlled a body for {player_id}"),
+        );
+    }
+
+    // Everything below is required by the contract and does nothing here. A
+    // component missing one of them does not instantiate at all.
+
+    async fn on_player_leave(_player_id: String) {}
+
+    async fn update(_dt: f32) {}
+
+    async fn on_interact(
+        _player_id: String,
+        _target: String,
+        _hit_point: exports::ironlark::host::server_api::Vec3,
+        _distance: f32,
+    ) {
+    }
+
+    async fn on_signal(_channel: String, _source: String, _payload: Vec<u8>) {}
+
+    async fn on_contact(
+        _target: String,
+        _other: exports::ironlark::host::server_api::ContactParty,
+        _point: exports::ironlark::host::server_api::Vec3,
+        _edge: exports::ironlark::host::server_api::ContactEdge,
+    ) {
+    }
+
+    async fn handle_rpc(
+        _player_id: String,
+        method: String,
+        _args: Vec<u8>,
+    ) -> Result<Vec<u8>, String> {
+        Err(format!("unknown method: {method}"))
+    }
+}
+
+export!(Component);
+```
+
+Note the shape of the two calls that matter: **`spawn` then `control`**, never one fused
+call. The entity exists first; a controller is bound to it second. That separation is what
+makes bodiless players, spectators and possession possible at all.
+
+## Build it
+
+```bash
+cargo build --release            # from the mod directory
+```
+
+or, from the game checkout, build every bundled mod at once:
+
+```bash
+./build-mods.sh
+```
+
+You should get `target/wasm32-wasip2/release/hellomode_server.wasm`.
+
+{{% alert title="Do not put a hyphen in the mod directory name" color="warning" %}}
+The host looks for `<mod-directory>_server.wasm`. Cargo names its artifact after the crate,
+turning hyphens into underscores — so a directory called `hello-gamemode` produces
+`hello_gamemode_server.wasm` while the host looks for `hello-gamemode_server.wasm`, and never
+finds it.
+
+The failure is quiet and misleading. The mod is still discovered, it can still be designated
+the gamemode, and the only clue is one `INFO` line:
+
+```
+mod tutorial:hello-gamemode has no server half (…/hello-gamemode_server.wasm)
+```
+
+Worse: the gamemode you *did* name is now loaded-as-nothing, and the gamemode you did not
+name was dropped for not being chosen — so nobody spawns at all. Keep mod directory names
+free of hyphens.
+{{% /alert %}}
+
+## Run it
+
+Your gamemode and the bundled `core:freeroam` are now both candidates, so the session refuses
+to start until you name one — that refusal is the resolver working, not a bug:
+
+```bash
+./target/release/ironlark-game -u you@example.com -p '…' --become-host \
+  -c http://localhost:8080 -i http://localhost:4433 -s ws://localhost:8000/connection/websocket \
+  --gamemode tutorial:hellomode
+```
+
+Add `--content /path/to/your/workshop-parent` if your content lives outside the install.
+
+## What success looks like
+
+In `logs/host.log`:
+
+```
+workshop: 7 mod(s) — … tutorial:hellomode 0.1.0
+gamemode: tutorial:hellomode
+hellomode: init, we own spawn now
+gamemode: set default-spawn = false
+server-mod loaded: tutorial:hellomode
+spawn: spawned 'core:character' body 354v0 at Vec3(0.0, 5.0, 12.0) (uncontrolled)
+hellomode: spawned and controlled a body for af74f667-…
+```
+
+The body is announced `uncontrolled` and becomes controlled a line later — that is the two
+steps, in the log.
+
+You will also see `has no client half`, which is correct: this mod has no client half. Add
+one when you need something on a player's screen.
+
+## Where to go next
+
+- Rounds, phases and per-player HUD text: [Gamemodes](/docs/manual/gamemodes/) and
+  [Broadcast and RPC](/docs/manual/broadcast-and-rpc/)
+- Zones and trigger volumes, for anything area-based: [Contact events](/docs/manual/contact-events/)
+- Every function you can call: [Interface reference](/docs/reference/)
+- Before designing something ambitious: [What you cannot build yet](/docs/manual/not-yet/)

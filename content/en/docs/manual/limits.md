@@ -19,6 +19,27 @@ description: >
 | Interact reach | 3.0 m from the body | the press does not resolve |
 | Character step-up | 0.3 m | taller ledges block movement |
 
+### What 64 KiB actually holds
+
+A number is not a feel. Taking the shape `freeroam` already publishes — a player id and a
+position — and filling the cap exactly:
+
+| The same 826 records, as | Bytes | |
+|---|---|---|
+| compact JSON | 65,481 | fits, just |
+| pretty-printed JSON (indent 2) | 100,185 | **rejected — 1.5× the cap** |
+| packed `[u8 len, id, 3 × f32]` | 40,474 | 62% of the JSON |
+
+So the ceiling is around **826 players in one JSON signal**, or **~1,337 packed**. About 80
+bytes per record, of which the UUID id is nearly half.
+
+Two things follow. The cap is not a constraint on gameplay — you would need hundreds of
+players in a single payload to meet it. And **indentation alone can break it**: the same data,
+pretty-printed, is half again over the limit, so always serialise compact.
+
+Size is rarely what hurts anyway; frequency is. A position broadcast at 4 Hz is routine, the
+same payload every tick is sixteen times the traffic.
+
 ## Three places work is dropped by design
 
 The host never lets a mod stall the simulation, so under pressure it discards rather than
