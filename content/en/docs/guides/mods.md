@@ -1,14 +1,12 @@
 ---
-sidebar_position: 2
+weight: 20
 title: Mods
 ---
 
-# Mods
-
-:::warning Work in progress
+{{% alert title="Work in progress" color="warning" %}}
 The modding API is evolving; treat specifics here as a sketch, not a stable
 contract.
-:::
+{{% /alert %}}
 
 A **mod** is a WebAssembly component that adds gameplay the host has no opinion
 about — items, rules, AI, UI. The host stays gameplay-agnostic; mods provide the

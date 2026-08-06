@@ -1,19 +1,17 @@
 ---
-sidebar_position: 1
+weight: 10
 title: Players, Identities & Entities
 ---
-
-# Players, Identities & Entities
 
 Ironlark keeps **who you are** separate from **what you're controlling**. That split is
 the foundation everything else builds on — spectators, respawns, alt-characters,
 NPCs, vehicles, hidden roles. This page explains the model.
 
-:::note
+{{% alert title="Note" color="info" %}}
 The *model* here is settled and engine-level (mods can't change it). The exact
 modding API for working with it is still being implemented — treat the function
 names below as illustrative, not final.
-:::
+{{% /alert %}}
 
 ## The four pieces
 
@@ -128,7 +126,7 @@ picks which one it wants:
 
 ## See also
 
-- [Gamemodes](/guides/gamemodes) — gamemodes decide *when* to spawn, control, and
+- [Gamemodes](/docs/guides/gamemodes/) — gamemodes decide *when* to spawn, control, and
   retire entities and identities.
 
 [kratos]: https://www.ory.sh/kratos/

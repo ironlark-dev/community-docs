@@ -1,9 +1,7 @@
 ---
-sidebar_position: 1
+weight: 10
 title: Welcome
 ---
-
-# Ironlark
 
 Ironlark is a moddable multiplayer game platform. The engine is a thin **host** that
 provides mechanism — maps, physics, networking, a modding runtime — and
@@ -15,11 +13,11 @@ design records live separately, in the project's design wiki.)
 ## What you can build
 
 - **Maps** — worlds authored in Blender (glTF) plus a small manifest. Host-owned
-  data; no code required. See [Maps](/guides/maps).
+  data; no code required. See [Maps](/docs/guides/maps/).
 - **Mods** — WebAssembly components that add gameplay: items, rules, AI, UI.
-  See [Mods](/guides/mods).
+  See [Mods](/docs/guides/mods/).
 - **Gamemodes** — the baseline ruleset of a session (free-roam, deathmatch, …),
-  itself just a mod. See [Gamemodes](/guides/gamemodes).
+  itself just a mod. See [Gamemodes](/docs/guides/gamemodes/).
 
 ## How content is organized
 
@@ -30,9 +28,9 @@ distributable bundle containing `maps/` and `mods/`. Everything is addressed as
 
 ## New here?
 
-Start with [Getting Started](/getting-started).
+Start with [Getting Started](/docs/getting-started/).
 
-:::note
+{{% alert title="Note" color="info" %}}
 Ironlark is in active development; APIs and guides will change. Pages marked
 *work in progress* are still settling.
-:::
+{{% /alert %}}

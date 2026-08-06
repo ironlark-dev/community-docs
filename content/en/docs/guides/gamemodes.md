@@ -1,14 +1,12 @@
 ---
-sidebar_position: 3
+weight: 30
 title: Gamemodes
 ---
 
-# Gamemodes
-
-:::warning Work in progress
+{{% alert title="Work in progress" color="warning" %}}
 The gamemode and body/control model is being designed; this page will fill in as
 it lands.
-:::
+{{% /alert %}}
 
 A **gamemode** is the single mod designated as a session's baseline ruleset —
 free-roam, deathmatch, hide & seek, and so on. Mechanically it is just a mod; the

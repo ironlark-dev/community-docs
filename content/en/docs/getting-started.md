@@ -1,13 +1,11 @@
 ---
-sidebar_position: 2
+weight: 20
 title: Getting Started
 ---
 
-# Getting Started
-
-:::warning Work in progress
+{{% alert title="Work in progress" color="warning" %}}
 Setup steps will firm up as the launcher and tooling land.
-:::
+{{% /alert %}}
 
 ## Prerequisites
 
@@ -34,6 +32,6 @@ Address content as `addon:item` — for example a map `your-addon:arena`, or a m
 
 ## Next steps
 
-- Make a world → [Maps](/guides/maps)
-- Add gameplay → [Mods](/guides/mods)
-- Set the session rules → [Gamemodes](/guides/gamemodes)
+- Make a world → [Maps](/docs/guides/maps/)
+- Add gameplay → [Mods](/docs/guides/mods/)
+- Set the session rules → [Gamemodes](/docs/guides/gamemodes/)

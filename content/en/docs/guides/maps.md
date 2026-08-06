@@ -1,9 +1,7 @@
 ---
-sidebar_position: 1
+weight: 10
 title: Maps
 ---
-
-# Maps
 
 A **map** is a world you author as data — geometry plus a small manifest. Maps
 are host-owned content; they run no code.
