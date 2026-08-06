@@ -21,7 +21,7 @@ design records live separately, in the project's design wiki.)
 
 ## How content is organized
 
-Installed content lives under `workshop/<addon>/`, where an **addon** is a
+Installed content lives under `workshop/<namespace>[/<addon>]/`, where an **addon** is a
 distributable bundle containing `maps/` and `mods/`. Everything is addressed as
 `addon:item` (for example `core:badgrass`). The bundled engine content is the
 `core` addon.

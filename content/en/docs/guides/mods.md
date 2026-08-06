@@ -25,14 +25,20 @@ mods stays opaque bytes, so the host never needs to understand mod content.
 ## Layout
 
 ```text
-workshop/<addon>/mods/<mod>/
+workshop/<namespace>[/<addon>]/mods/<mod>/
   mod.toml
-  ...             # built .wasm components
+  <mod>_server.wasm    # built components (not committed — build them)
+  <mod>_client.wasm
 ```
 
-Mods build to the `wasm32-wasip2` target.
+A mod's identity comes from that path, never from the manifest — `core:freeroam`,
+`ironlark:examples/echo`.
+
+Mods build to the `wasm32-wasip2` target as WebAssembly **components**. See
+[Choosing a language](/docs/manual/languages/) for what that requires.
 
 ## Reference mod
 
-The bundled `core:heartbeat` mod is a minimal end-to-end example — host ↔ mod
-messaging and a simple overlay UI.
+The bundled `ironlark:examples/echo` mod is the minimal end-to-end example, and the
+only one shipping both realms: a keypress becomes an RPC, the server half
+broadcasts the new value, and both peers' client halves render it.

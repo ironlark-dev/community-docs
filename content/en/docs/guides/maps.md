@@ -9,7 +9,7 @@ are host-owned content; they run no code.
 ## Anatomy
 
 ```text
-workshop/<addon>/maps/<map>/
+workshop/<namespace>[/<addon>]/maps/<map>/
   map.toml        # manifest: id, environment, spawn points
   <map>.glb       # geometry, materials, lights (glTF, from Blender)
 ```
