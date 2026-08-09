@@ -1,10 +1,9 @@
-baseURL = "https://docs.ironlark.example/"
+baseURL = "https://docs.ironlark.net/"
 title = "Ironlark"
 enableRobotsTXT = true
 defaultContentLanguage = "en"
 
-# Docsy theme via Hugo Modules. One-time setup: `mise run docs:setup`
-# (runs `hugo mod get` + `npm install`). Requires Hugo *extended*.
+# Docsy theme via Hugo Modules. Requires Hugo *extended*.
 [module]
   proxy = "direct"
   [[module.imports]]
@@ -17,10 +16,6 @@ defaultContentLanguage = "en"
     label = "English"
     contentDir = "content/en"
     weight = 1
-  [languages.ru]
-    label = "Русский"
-    contentDir = "content/ru"
-    weight = 2
 
 [markup]
   [markup.goldmark.renderer]
@@ -29,7 +24,9 @@ defaultContentLanguage = "en"
     noClasses = false
 
 [params]
-  github_repo = "https://git.ywa.red/gamedev/ironlark"
+  github_repo = "https://github.com/ironlark-dev/community-docs"
   [params.ui]
     sidebar_menu_compact = true
     navbar_logo = false
+    # Follows the reader's system setting, with a switcher in the navbar.
+    showLightDarkModeMenu = true

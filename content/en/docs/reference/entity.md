@@ -3,7 +3,7 @@ title: "entity"
 linkTitle: "entity"
 weight: 30
 description: >
-  Server-realm entity verbs (ADR 0020/0021/0022). A body is just an entity a
+  Server-realm entity verbs. A body is just an entity a
   controller drives; creation and control are separate. The verb set is fixed
   and generic: capability grows by whitelisting components (data), never by
   adding verbs.
@@ -17,8 +17,8 @@ From `host.wit`. Edit the WIT, not this page.
 
 | Function | Summary |
 |---|---|
-| [`spawn`](#spawn) | Spawn an entity from an archetype at a transform; returns its handle, or an error (e.g. unknown archetype). `archetype` is the publishing mod's identity then the archetype name — `core:balloons/balloon` — resolved through the content registry (ADR 0011); `core:character` resolves the built-in character body. |
-| [`control`](#control) | Bind a player controller to a body: control is `Controller -> Body`, SEPARATE from creation (ADR 0021) — spawn an entity, THEN control it. `player` is a player identity id. |
+| [`spawn`](#spawn) | Spawn an entity from an archetype at a transform; returns its handle, or an error (e.g. unknown archetype). `archetype` is the publishing mod's identity then the archetype name — `core:balloons/balloon` — resolved through the content registry (the content registry); `core:character` resolves the built-in character body. |
+| [`control`](#control) | Bind a player controller to a body: control is `Controller -> Body`, SEPARATE from creation — spawn an entity, THEN control it. `player` is a player identity id. |
 | [`release`](#release) | Release an entity from its controller (inverse of `control`). |
 | [`despawn`](#despawn) | Despawn an entity (and its descendants — e.g. a glTF scene's children), destroying it in the world. |
 | [`set-component`](#set-component) | Write fields into one registered component on an entity. `component` is the component's registered name (e.g. "transform"); each field patches one path within it. |
@@ -26,7 +26,7 @@ From `host.wit`. Edit the WIT, not this page.
 | [`part`](#part) | Resolve a named descendant — a part — of an entity by its stable name path ("body/skin" nests; names come from the authored scene, e.g. glTF node names, so a path survives a model re-export). |
 | [`identify`](#identify) | Give an entity a stable, findable id. |
 | [`find`](#find) | Resolve an id (or id prefix) to the entities carrying it, within the caller's namespace. |
-| [`body-of`](#body-of) | Resolve a player's controlled body (the controller -> body relation, ADR 0021) to an entity handle. |
+| [`body-of`](#body-of) | Resolve a player's controlled body (the controller -> body relation) to an entity handle. |
 
 ### `spawn`
 
@@ -37,7 +37,7 @@ spawn: async func(archetype: string, at: spawn-transform) -> result<handle, stri
 Spawn an entity from an archetype at a transform; returns its handle, or an
 error (e.g. unknown archetype). `archetype` is the publishing mod's identity
 then the archetype name — `core:balloons/balloon` — resolved through the
-content registry (ADR 0011); `core:character` resolves the built-in
+content registry (the content registry); `core:character` resolves the built-in
 character body. Registry entities replicate to every peer automatically.
 
 ### `control`
@@ -47,7 +47,7 @@ control: async func(player: string, entity: borrow<handle>) -> result<_, string>
 ```
 
 Bind a player controller to a body: control is `Controller -> Body`, SEPARATE
-from creation (ADR 0021) — spawn an entity, THEN control it. `player` is a
+from creation — spawn an entity, THEN control it. `player` is a
 player identity id. On the host: the own local player's body becomes the local
 player (camera + input); a remote player's body becomes the host's authoritative
 simulation body for that client — driven by its input and broadcast via
@@ -146,8 +146,7 @@ resolves against a host-side index and does not touch the simulation.
 body-of: async func(player: string) -> result<handle, string>;
 ```
 
-Resolve a player's controlled body (the controller -> body relation,
-ADR 0021) to an entity handle. This is how a mechanic mod reaches the
+Resolve a player's controlled body (the controller -> body relation) to an entity handle. This is how a mechanic mod reaches the
 player a hook handed it (on-contact, on-interact) to apply an effect —
 teleport, launch, recolor — without the gamemode brokering every move.
 Errors while the player controls no body.

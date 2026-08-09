@@ -3,7 +3,7 @@ title: "spatial"
 linkTitle: "spatial"
 weight: 40
 description: >
-  Read-only spatial queries over the physical world (ADR 0026): the sensing
+  Read-only spatial queries over the physical world: the sensing
   counterpart of contact events. Sees map colliders and flagged-entity
   proxies (archetypes with `interact`/`contact`); character bodies are not
   raycastable. A hit on another mod's entity reports geometry but no handle —

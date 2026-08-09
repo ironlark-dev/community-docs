@@ -1,0 +1,294 @@
+package ironlark:host@0.1.0;
+
+interface log {
+  enum level { trace, debug, info, warn, error }
+  log: func(lvl: level, msg: string);
+}
+
+interface broadcast {
+  send: async func(channel: string, data: list<u8>);
+  send-to: async func(player-id: string, channel: string, data: list<u8>);
+}
+
+interface rpc-out {
+  call: async func(method: string, args: list<u8>) -> result<list<u8>, string>;
+}
+
+interface ui {
+  set-overlay-text: func(text: string);
+}
+
+// Server-realm entity verbs. A body is just an entity a
+// controller drives; creation and control are separate. The verb set is fixed
+// and generic: capability grows by whitelisting components (data), never by
+// adding verbs.
+interface entity {
+  // Opaque host-issued handle to a spawned entity. Mods cannot fabricate one.
+  resource handle;
+
+  record vec3 { x: f32, y: f32, z: f32 }
+  record spawn-transform { position: vec3, yaw: f32 }
+
+  // Spawn an entity from an archetype at a transform; returns its handle, or an
+  // error (e.g. unknown archetype). `archetype` is the publishing mod's identity
+  // then the archetype name — `core:balloons/balloon` — resolved through the
+  // content registry (the content registry); `core:character` resolves the built-in
+  // character body. Registry entities replicate to every peer automatically.
+  spawn: async func(archetype: string, at: spawn-transform) -> result<handle, string>;
+
+  // Bind a player controller to a body: control is `Controller -> Body`, SEPARATE
+  // from creation — spawn an entity, THEN control it. `player` is a
+  // player identity id. On the host: the own local player's body becomes the local
+  // player (camera + input); a remote player's body becomes the host's authoritative
+  // simulation body for that client — driven by its input and broadcast via
+  // WorldSnapshot. Deferred hard domino: the remote client still spawns its own
+  // predicted body rather than instantiating this host-controlled one.
+  control: async func(player: string, entity: borrow<handle>) -> result<_, string>;
+
+  // Release an entity from its controller (inverse of `control`).
+  release: async func(entity: borrow<handle>) -> result<_, string>;
+
+  // Despawn an entity (and its descendants — e.g. a glTF scene's children),
+  // destroying it in the world. Takes the handle by value (owned, NOT borrow):
+  // despawn is the inverse of `spawn`, so it CONSUMES the handle — the entity is
+  // gone and the handle is spent, which prevents use-after-despawn. Errors if the
+  // entity no longer exists.
+  despawn: async func(entity: handle) -> result<_, string>;
+
+  record quat { x: f32, y: f32, z: f32, w: f32 }
+  record rgba { r: f32, g: f32, b: f32, a: f32 }
+
+  // The value written into a component field: a closed vocabulary of primitive
+  // shapes the host knows how to apply. Adding a settable *component* is data (a
+  // registration), not a WIT change; extending this *shape* vocabulary is the rare
+  // exception that does touch the WIT.
+  variant field-value {
+    number(f32),
+    boolean(bool),
+    text(string),
+    vec3(vec3),
+    quat(quat),
+    rgba(rgba),
+  }
+
+  // One assignment: a dotted field path within a component and the value to write
+  // at that path (e.g. path "translation" with a vec3 value).
+  record component-field {
+    path: string,
+    value: field-value,
+  }
+
+  // Write fields into one registered component on an entity. `component` is the
+  // component's registered name (e.g. "transform"); each field patches one path
+  // within it. Only whitelisted components are writable. Errors on a forbidden or
+  // unknown component, an unknown field path, a value-shape mismatch, or a missing
+  // entity. This single verb stands in for per-property setters: new settable
+  // components and fields arrive by registration, never by new verbs.
+  set-component: async func(
+    entity: borrow<handle>,
+    component: string,
+    fields: list<component-field>,
+  ) -> result<_, string>;
+
+  // Read fields from one registered component on an entity — the inverse of
+  // set-component. `component` is the component's registered name (e.g. "transform");
+  // each entry in `paths` is a dotted field path to read (e.g. "translation"). Returns
+  // one component-field per requested path, echoing the path with its current value, so
+  // a result feeds straight back into set-component. The same whitelist gates which
+  // components are readable. Errors on a forbidden or unknown component, an unknown
+  // field path, a value shape the vocabulary can't represent, or a missing entity.
+  get-component: async func(
+    entity: borrow<handle>,
+    component: string,
+    paths: list<string>,
+  ) -> result<list<component-field>, string>;
+
+  // Resolve a named descendant — a part — of an entity by its stable name path
+  // ("body/skin" nests; names come from the authored scene, e.g. glTF node
+  // names, so a path survives a model re-export). Parts address into an
+  // archetype's hierarchy: the returned handle feeds set-component /
+  // get-component to touch a child's transform or material. Errors while the
+  // part does not exist — a scene entity's children appear when its async scene
+  // load completes, so a caller retries on a later tick.
+  part: async func(entity: borrow<handle>, path: string) -> result<handle, string>;
+
+  // Give an entity a stable, findable id. The host records the calling mod as the
+  // owner, so a mod can only name within its own namespace. Ids are
+  // `/`-delimited (e.g. "balloon/alice-1") so related entities share a prefix.
+  // Re-identifying the same entity moves its id; an id a different live entity
+  // already holds is rejected. Handles are ephemeral (spent on despawn, lost on
+  // reload) — an id is the durable way to reach an entity again.
+  identify: async func(entity: borrow<handle>, id: string) -> result<_, string>;
+
+  // Resolve an id (or id prefix) to the entities carrying it, within the caller's
+  // namespace. A full id (e.g. "balloon/alice-1") returns that one entity; a prefix
+  // (e.g. "balloon") returns every entity beneath it in the `/`-delimited hierarchy;
+  // an empty string returns all of the addon's identified entities. Read-only: it
+  // resolves against a host-side index and does not touch the simulation.
+  find: async func(pattern: string) -> result<list<handle>, string>;
+
+  // Resolve a player's controlled body (the controller -> body relation,
+  // to an entity handle. This is how a mechanic mod reaches the
+  // player a hook handed it (on-contact, on-interact) to apply an effect —
+  // teleport, launch, recolor — without the gamemode brokering every move.
+  // Errors while the player controls no body.
+  body-of: async func(player: string) -> result<handle, string>;
+}
+
+// Read-only spatial queries over the physical world: the sensing
+// counterpart of contact events. Sees map colliders and flagged-entity
+// proxies (archetypes with `interact`/`contact`); character bodies are not
+// raycastable. A hit on another mod's entity reports geometry but no handle —
+// cross-mod reach stays the signal bus, matching `find`'s namespace scoping.
+interface spatial {
+  use entity.{handle};
+
+  record vec3 { x: f32, y: f32, z: f32 }
+
+  // The closest thing a ray hit: where and how far, plus the entity when the
+  // hit resolved to one of the CALLER's own identified entities (absent for
+  // map geometry and foreign entities — they occlude, nothing more).
+  record ray-hit {
+    entity: option<handle>,
+    position: vec3,
+    normal: vec3,
+    distance: f32,
+  }
+
+  // Cast a ray and return the closest hit within `max-distance`, if any.
+  raycast: async func(origin: vec3, direction: vec3, max-distance: f32) -> option<ray-hit>;
+
+  // The caller's own identified entities whose collision intersects the
+  // sphere. Result count is capped like `find`'s.
+  overlap: async func(center: vec3, radius: f32) -> list<handle>;
+}
+
+// The signal bus: observe-only mod-to-mod events over host-routed
+// byte channels. Signals are facts, not decisions — no consume, no override,
+// subscriber order undefined; decision chains belong to the composition hook
+// layer (the composition layer). Channel names are convention (`addon:name` in the protocol
+// owner's namespace), never enforced: commands legitimately cross namespaces
+// (a gamemode emits on another mod's command channel). Server realm only.
+interface signal {
+  // Fan `payload` out to every subscriber of `channel`, excluding the emitter
+  // (no self-delivery — kills the trivial feedback loop). Delivery is reliable
+  // in the normal case and sheds loudly per overloaded subscriber; it never
+  // stalls the simulation. Emits fired while server mods are still loading are
+  // queued and flushed once all of them are up, so an init-time emit cannot
+  // race another mod's init-time subscribe. Errors on an empty or oversized
+  // channel name, an oversized payload, or an overflow of that pre-load queue.
+  emit: func(channel: string, payload: list<u8>) -> result<_, string>;
+
+  // Deliver future emits on `channel` to this mod's `server-api.on-signal`.
+  // Idempotent; no replay — a signal is a moment, a late subscriber misses
+  // history by design. Subscriptions die with the mod. Errors on an empty or
+  // oversized channel name.
+  subscribe: func(channel: string) -> result<_, string>;
+}
+
+// Host-owned, read-only queries over the loaded map (mapping track). Lets a
+// gamemode compute spawn placement from the map's data instead of taking the host
+// default. Grows into zones / named-entity / surface queries later.
+interface map-api {
+  record vec3 { x: f32, y: f32, z: f32 }
+  record spawn-transform { position: vec3, yaw: f32 }
+
+  // The loaded map's declared spawn points (position + facing; yaw in RADIANS, so
+  // the values feed straight back into entity.spawn). Returns a single
+  // engine-default fallback when the map declares none, so a gamemode always has
+  // at least one usable spawn.
+  list-spawns: async func() -> list<spawn-transform>;
+}
+
+interface server-api {
+  // Defined locally: this wit-parser rejects cross-interface `use` (same reason
+  // map-api carries its own copy).
+  record vec3 { x: f32, y: f32, z: f32 }
+
+  init: async func();
+  on-player-join: async func(player-id: string);
+  on-player-leave: async func(player-id: string);
+  handle-rpc: async func(player-id: string, method: string, args: list<u8>) -> result<list<u8>, string>;
+
+  // Fixed-rate server tick. The server realm has no render frames (a headless server
+  // renders nothing), so periodic mod logic runs on a fixed cadence, not per frame.
+  // `dt` is the seconds since the previous update, so motion stays rate-independent.
+  // The host dispatches this to every loaded server-mod and does NOT wait for it: a
+  // slow update is skipped until it finishes, and never stalls the simulation.
+  update: async func(dt: f32);
+
+  // A player used (pressed interact on) one of this mod's interactable entities.
+  // The host raycasts authoritatively from the player's body and routes the hit
+  // to the archetype owner's mod — only archetypes declaring `interact = true`
+  // arrive here, and only for entities this mod named via `identify`. `target`
+  // is that id in the mod's own scope, so it feeds straight into entity.find.
+  // `hit-point` is where the use-ray struck, in world space — on a multi-part
+  // entity it tells WHICH part was pressed; `distance` is from the presser's
+  // body to that point, the same measure the host's reach limit enforces.
+  on-interact: async func(player-id: string, target: string, hit-point: vec3, distance: f32);
+
+  // A signal arrived on a channel this mod subscribed to. `source`
+  // is the emitting mod's addon id, stamped by the host — unforgeable, so
+  // policy ("only the gamemode commands me", "facts only from the protocol
+  // owner") is one comparison. The payload carries everything the handler
+  // needs: a signal does not synchronize with the emitter's queued entity
+  // verbs, so "hear signal, then read the world" is an anti-pattern.
+  on-signal: async func(channel: string, source: string, payload: list<u8>);
+
+  // What physically touched one of this mod's contact entities —
+  // instance-exact, so "react only to THIS player / THAT balloon" is one
+  // comparison in the handler.
+  variant contact-party {
+    // A controlled body: the controlling player's identity id.
+    player(string),
+    // Another contact entity: its addon-scoped id (`addon:id`), or "" when its
+    // owner never identified it.
+    entity(string),
+    // The map's own geometry ("world" is a reserved WIT word).
+    map-geometry,
+  }
+
+  // Which side of a touch interval this event marks. Only the edges cross the
+  // boundary — never per-frame contact data; a mod that needs "while touching"
+  // holds the interval between the two.
+  enum contact-edge { started, ended }
+
+  // Physical touch on one of this mod's contact entities (archetypes declaring
+  // `contact = true`), for entities this mod named via `identify` —
+  // `target` is that id in the mod's own scope. When both parties are contact
+  // entities, each owner hears about its own. `point` is where the touch sits
+  // in world space (on `ended` — where the other party separated to).
+  on-contact: async func(target: string, other: contact-party, point: vec3, edge: contact-edge);
+}
+
+interface client-api {
+  init: async func();
+  on-message: async func(channel: string, data: list<u8>);
+  on-input: async func(action: string);
+}
+
+// Host-owned gamemode/session settings a server-mod configures.
+interface gamemode {
+  // Toggle the host's default spawn-on-join (the free-roam baseline). ON by
+  // default. A gamemode that owns placement calls set-default-spawn(false) in init(),
+  // then spawns via entity.spawn + entity.control from on-player-join.
+  set-default-spawn: func(enabled: bool);
+}
+
+world server-mod {
+  import log;
+  import broadcast;
+  import entity;
+  import gamemode;
+  import map-api;
+  import signal;
+  import spatial;
+  export server-api;
+}
+
+world client-mod {
+  import log;
+  import ui;
+  import rpc-out;
+  export client-api;
+}

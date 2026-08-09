@@ -7,8 +7,8 @@ Ironlark is a moddable multiplayer game platform. The engine is a thin **host** 
 provides mechanism — maps, physics, networking, a modding runtime — and
 **everything else is content you make**: maps, mods, and gamemodes.
 
-This site is the **community guide to building on Ironlark**. (Engine internals and
-design records live separately, in the project's design wiki.)
+This site is the **community guide to building on Ironlark**: everything you need to
+build content, and nothing about the engine's own internals.
 
 ## What you can build
 

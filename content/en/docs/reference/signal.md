@@ -3,10 +3,10 @@ title: "signal"
 linkTitle: "signal"
 weight: 50
 description: >
-  The signal bus (ADR 0024): observe-only mod-to-mod events over host-routed
+  The signal bus: observe-only mod-to-mod events over host-routed
   byte channels. Signals are facts, not decisions — no consume, no override,
   subscriber order undefined; decision chains belong to the composition hook
-  layer (ADR 0013). Channel names are convention (`addon:name` in the protocol
+  layer (the composition layer). Channel names are convention (`addon:name` in the protocol
   owner's namespace), never enforced: commands legitimately cross namespaces
   (a gamemode emits on another mod's command channel). Server realm only.
 ---

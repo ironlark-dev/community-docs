@@ -13,8 +13,8 @@ places them itself.
 
 ## The files
 
-Under your content root — `assets/workshop/` beside the game, or wherever `--content`
-points — create a namespace, an addon marker, and a mod directory:
+Under the game's content root — `assets/workshop/` beside the install — create a
+namespace, an addon marker, and a mod directory:
 
 ```text
 workshop/
@@ -92,9 +92,9 @@ the bindings generate break the native linker rather than failing with anything 
 package ironlark:hellomode@0.1.0;
 ```
 
-`wit/deps/ironlark-host/host.wit` — a **copy** of the host's contract. Take it from the
-engine's `src/plugins/modding/wit/host.wit`. It must match the host you run against; a stale
-copy fails to instantiate without a useful message.
+`wit/deps/ironlark-host/host.wit` — a **copy** of the host's contract. Download it here:
+[host.wit](/host.wit). It must match the version of the game you run against; a stale copy
+fails to instantiate without a useful message.
 
 `server/Cargo.toml`:
 
@@ -220,12 +220,6 @@ makes bodiless players, spectators and possession possible at all.
 cargo build --release            # from the mod directory
 ```
 
-or, from the game checkout, build every bundled mod at once:
-
-```bash
-./build-mods.sh
-```
-
 You should get `target/wasm32-wasip2/release/hellomode_server.wasm`.
 
 {{% alert title="Do not put a hyphen in the mod directory name" color="warning" %}}
@@ -251,13 +245,16 @@ free of hyphens.
 Your gamemode and the bundled `core:freeroam` are now both candidates, so the session refuses
 to start until you name one — that refusal is the resolver working, not a bug:
 
-```bash
-./target/release/ironlark-game -u you@example.com -p '…' --become-host \
-  -c http://localhost:8080 -i http://localhost:4433 -s ws://localhost:8000/connection/websocket \
-  --gamemode tutorial:hellomode
+Name yours in `config/server.toml` beside the game:
+
+```toml
+[session]
+gamemode = "tutorial:hellomode"
 ```
 
-Add `--content /path/to/your/workshop-parent` if your content lives outside the install.
+Then host a session from the launcher as usual. The addon has to be in the content root the
+game reads — `assets/workshop/` beside the install — which is where you built it in the
+first step.
 
 ## What success looks like
 

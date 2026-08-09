@@ -18,8 +18,8 @@ From `host.wit`. Edit the WIT, not this page.
 | [`handle-rpc`](#handle-rpc) |  |
 | [`update`](#update) | Fixed-rate server tick. |
 | [`on-interact`](#on-interact) | A player used (pressed interact on) one of this mod's interactable entities. |
-| [`on-signal`](#on-signal) | A signal arrived on a channel this mod subscribed to (ADR 0024). `source` is the emitting mod's addon id, stamped by the host — unforgeable, so policy ("only the gamemode commands me", "facts only from the protocol owner") is one comparison. |
-| [`on-contact`](#on-contact) | Physical touch on one of this mod's contact entities (archetypes declaring `contact = true`, ADR 0025), for entities this mod named via `identify` — `target` is that id in the mod's own scope. |
+| [`on-signal`](#on-signal) | A signal arrived on a channel this mod subscribed to. `source` is the emitting mod's addon id, stamped by the host — unforgeable, so policy ("only the gamemode commands me", "facts only from the protocol owner") is one comparison. |
+| [`on-contact`](#on-contact) | Physical touch on one of this mod's contact entities (archetypes declaring `contact = true`), for entities this mod named via `identify` — `target` is that id in the mod's own scope. |
 
 ### `init`
 
@@ -86,7 +86,7 @@ body to that point, the same measure the host's reach limit enforces.
 on-signal: async func(channel: string, source: string, payload: list<u8>);
 ```
 
-A signal arrived on a channel this mod subscribed to (ADR 0024). `source`
+A signal arrived on a channel this mod subscribed to. `source`
 is the emitting mod's addon id, stamped by the host — unforgeable, so
 policy ("only the gamemode commands me", "facts only from the protocol
 owner") is one comparison. The payload carries everything the handler
@@ -100,7 +100,7 @@ on-contact: async func(target: string, other: contact-party, point: vec3, edge: 
 ```
 
 Physical touch on one of this mod's contact entities (archetypes declaring
-`contact = true`, ADR 0025), for entities this mod named via `identify` —
+`contact = true`), for entities this mod named via `identify` —
 `target` is that id in the mod's own scope. When both parties are contact
 entities, each owner hears about its own. `point` is where the touch sits
 in world space (on `ended` — where the other party separated to).
@@ -130,7 +130,7 @@ variant contact-party {
 }
 ```
 
-What physically touched one of this mod's contact entities (ADR 0025) —
+What physically touched one of this mod's contact entities —
 instance-exact, so "react only to THIS player / THAT balloon" is one
 comparison in the handler.
 

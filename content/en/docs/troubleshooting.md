@@ -35,7 +35,7 @@ cargo output under `target/`. A stale copy at that clean path therefore shadows 
 you do, silently.
 
 If behaviour does not match your source, look for `<name>_server.wasm` next to `mod.toml` and
-delete it, then rebuild with `./build-mods.sh`.
+delete it, then rebuild with `cargo build --release` from the mod directory.
 
 ## A joiner is refused, naming content
 
@@ -71,9 +71,9 @@ emitted.
 
 ## Verifying a session end to end
 
-```
-CHECK=1 ./run2-local.sh
-```
+Host a session and have somebody join it. In the host log, a healthy session shows the
+mods loading, then the joiner being admitted, then the joiner staying — a peer that is
+refused also logs that it entered the session, so "it connected" on its own proves nothing.
+What separates the two is whether the joiner is still there a moment later.
 
-Runs a host and a joiner, states which properties it checked, and exits non-zero naming what
-broke — rather than leaving you to interpret logs.
+If the joiner leaves immediately, its own log carries the reason; the host is not told it.
