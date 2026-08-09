@@ -1,0 +1,41 @@
+---
+title: "Ironlark"
+description: "Build maps, mods and gamemodes for the Ironlark engine."
+template: splash
+hero:
+  tagline: A moddable multiplayer platform. The engine is a thin host that provides mechanism — everything else is content you make.
+  actions:
+    - text: Get started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: Write your first gamemode
+      link: /guides/first-gamemode/
+      icon: rocket
+      variant: minimal
+---
+
+import { CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
+
+## What you can build
+
+<CardGrid>
+  <Card title="Maps" icon="map">
+    Worlds authored in Blender as glTF, plus a small manifest. Host-owned data, not code.
+  </Card>
+  <Card title="Mods" icon="puzzle">
+    WebAssembly components the host loads. They spawn things, react to touch and input, and talk to each other over a bus.
+  </Card>
+  <Card title="Gamemodes" icon="star">
+    A mod that declares the gamemode role. It owns the rules a session plays by — including where players appear.
+  </Card>
+</CardGrid>
+
+## Once you are past the first session
+
+<CardGrid>
+  <LinkCard title="The manual" href="/manual/"
+    description="How each subsystem works and what to reach for — read a page when you need it." />
+  <LinkCard title="Interface reference" href="/reference/"
+    description="Every function the host offers, generated from the contract a mod compiles against." />
+</CardGrid>

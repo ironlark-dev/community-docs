@@ -1,10 +1,15 @@
 {
-  "name": "ironlark-community-docs",
+  "name": "ironlark-docs",
+  "type": "module",
   "private": true,
-  "description": "Ironlark community documentation (Hugo + Docsy)",
-  "devDependencies": {
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.47",
-    "postcss-cli": "^11.0.0"
+  "scripts": {
+    "dev": "astro dev --host 0.0.0.0 --port 4321",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.41.7",
+    "astro": "^7.2.0",
+    "sharp": "^0.34.0"
   }
 }

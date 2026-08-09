@@ -1,0 +1,34 @@
+---
+title: "Guides"
+description: "Task-shaped walkthroughs: author a map, write a mod, designate a gamemode."
+sidebar:
+  hidden: true
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Each guide is a task from beginning to working result. Read the
+[manual](/manual/) when you want to understand a subsystem instead.
+
+<CardGrid>
+  <LinkCard
+    title="Your first gamemode"
+    href="/guides/first-gamemode/"
+    description="From an empty directory to players spawning under rules you wrote. Start here if you have never written a mod."
+  />
+  <LinkCard
+    title="Maps"
+    href="/guides/maps/"
+    description="Author a world in Blender, give it a manifest, and have the engine load it."
+  />
+  <LinkCard
+    title="Mods"
+    href="/guides/mods/"
+    description="The shape of a mod: what it declares, what it exports, how it is built."
+  />
+  <LinkCard
+    title="Gamemodes"
+    href="/guides/gamemodes/"
+    description="Declare the gamemode role, and name which one a session runs."
+  />
+</CardGrid>

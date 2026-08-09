@@ -1,0 +1,40 @@
+---
+title: "Interface reference"
+description: "Every function the host exposes to a mod, and every function a mod must export."
+sidebar:
+  hidden: true
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+Generated from `host.wit`, the contract a mod compiles against — so a page here says
+what the running host actually offers, not what it offered when someone last wrote
+about it.
+
+<Aside type="caution" title="Keep your copy fresh">
+A mod vendors its own copy of the contract. When a page here and your copy disagree,
+your copy is stale — [download the current one](/host.wit).
+</Aside>
+
+## Exported — you implement these, the host calls them
+
+<CardGrid>
+  <LinkCard title="server-api" href="/reference/server-api/"
+    description="The server half of a mod: init, update, joins, signals, contacts, interaction." />
+  <LinkCard title="client-api" href="/reference/client-api/"
+    description="The client half: init, input, and messages from your server half." />
+</CardGrid>
+
+## Imported — the host offers these, you call them
+
+<CardGrid>
+  <LinkCard title="entity" href="/reference/entity/" description="Spawn, despawn, read and write components, possess and release." />
+  <LinkCard title="spatial" href="/reference/spatial/" description="Raycasts and overlap queries." />
+  <LinkCard title="signal" href="/reference/signal/" description="Emit and subscribe on the mod-to-mod bus." />
+  <LinkCard title="broadcast" href="/reference/broadcast/" description="Send to every client, or to one." />
+  <LinkCard title="rpc-out" href="/reference/rpc-out/" description="Call from a client half into your server half." />
+  <LinkCard title="map-api" href="/reference/map-api/" description="Read what the loaded map declares." />
+  <LinkCard title="gamemode" href="/reference/gamemode/" description="What the designated gamemode may switch off." />
+  <LinkCard title="ui" href="/reference/ui/" description="The overlay surface a client half can write to." />
+  <LinkCard title="log" href="/reference/log/" description="Write to the host log." />
+</CardGrid>

@@ -1,0 +1,68 @@
+---
+title: "Manual"
+description: "How the engine works, one subsystem at a time. Read a page when you need that subsystem; they do not assume each other."
+sidebar:
+  hidden: true
+---
+
+import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
+
+The [interface reference](/reference/) says what every function does. These pages say
+what to reach for and why, which the signatures cannot.
+
+<Aside type="tip" title="If this is your first mod">
+Read [Realms and the session lifecycle](/manual/realms-and-lifecycle/) first — everything
+else assumes you know which realm your code runs in. Then read
+[What you cannot build yet](/manual/not-yet/): it is short, and it will save you more time
+than any other page here.
+</Aside>
+
+## Getting your bearings
+
+<CardGrid>
+  <LinkCard title="Realms and the session lifecycle" href="/manual/realms-and-lifecycle/"
+    description="Server realm, client realm, and what happens between a session starting and ending." />
+  <LinkCard title="Choosing a language" href="/manual/languages/"
+    description="A mod is a WebAssembly component. What that does and does not let you write it in." />
+  <LinkCard title="What you cannot build yet" href="/manual/not-yet/"
+    description="The honest list. Read it before planning anything ambitious." />
+  <LinkCard title="Limits" href="/manual/limits/"
+    description="The ceilings the host enforces, and what happens when you reach one." />
+</CardGrid>
+
+## Shipping content
+
+<CardGrid>
+  <LinkCard title="Addons and identity" href="/manual/addons-and-identity/"
+    description="How content is laid out on disk and how its name is derived from where it sits." />
+  <LinkCard title="The mod manifest" href="/manual/mod-manifest/"
+    description="What a mod declares about itself." />
+  <LinkCard title="Archetypes" href="/manual/archetypes/"
+    description="Publishing a thing that can exist in the world." />
+  <LinkCard title="Components" href="/manual/components/"
+    description="The accessible surface of an entity: what you may read and write." />
+</CardGrid>
+
+## Acting on the world
+
+<CardGrid>
+  <LinkCard title="Entities and control" href="/manual/entities-and-control/"
+    description="Spawn, despawn, possess and release. A body is a role, not a type." />
+  <LinkCard title="Interaction" href="/manual/interaction/"
+    description="Being pressed: reach, aim and who resolves the hit." />
+  <LinkCard title="Contact events" href="/manual/contact-events/"
+    description="Physical touch, folded into events you can act on." />
+  <LinkCard title="Spatial queries" href="/manual/spatial-queries/"
+    description="Raycasts and overlaps, and what they deliberately do not return." />
+</CardGrid>
+
+## Talking to other code
+
+<CardGrid>
+  <LinkCard title="Signals" href="/manual/signals/"
+    description="Mod-to-mod events over a host-routed bus, with an unforgeable source." />
+  <LinkCard title="Broadcast and RPC" href="/manual/broadcast-and-rpc/"
+    description="Reaching the client half of your own mod, and answering it." />
+  <LinkCard title="Gamemodes" href="/manual/gamemodes/"
+    description="The one role a session designates, and what it is allowed to own." />
+</CardGrid>
