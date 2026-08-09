@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "ui"
 sidebar:
   order: 100

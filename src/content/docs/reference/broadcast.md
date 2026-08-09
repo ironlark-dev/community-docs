@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "broadcast"
 sidebar:
   order: 60

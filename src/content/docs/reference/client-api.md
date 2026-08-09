@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "client-api"
 sidebar:
   order: 20

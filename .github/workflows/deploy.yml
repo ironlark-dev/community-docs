@@ -26,9 +26,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Check the pages before spending a build on them
+        run: npm run check
       - run: npx astro build
       - name: Check that no internal link points at a page that does not exist
-        run: node scripts/check-links.mjs
+        run: npm run check:built
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

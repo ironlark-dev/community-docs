@@ -1,0 +1,440 @@
+---
+title: "Make your first thing"
+description: "From an empty directory to a balloon floating in the world and bobbing. Every step here was run against the engine, and the log lines are the real ones."
+kind: tutorial
+area: build
+sidebar:
+  order: 3
+---
+
+import { Aside, FileTree, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+You are going to put an object in the world and make it move. That is the smallest
+useful thing you can build, and almost every mod is a variation on it.
+
+About forty minutes. At the end you will have a balloon that floats and bobs.
+
+## What you need
+
+- The game, installed and able to run a session.
+- A Rust toolchain, with the `wasm32-wasip2` target:
+  ```sh
+  rustup target add wasm32-wasip2
+  ```
+
+<Aside type="note" title="Why Rust">
+A mod is a WebAssembly component and the host does not care what language produced it.
+In practice, though, every function a mod exports is async, and Rust's bindings
+generator is the only one this has been done with end to end. The full reason is on
+[Choosing a language](/build/languages/).
+</Aside>
+
+## The words you need
+
+Three, and then we start.
+
+- An **addon** is the folder you install and share. It has a name, and that name comes
+  from where it sits on disk.
+- A **mod** is code inside an addon. This one will be a server mod: it runs on the host
+  and decides what is true.
+- An **archetype** is a thing your mod publishes that can exist in the world — a prop,
+  a zone, a balloon. You declare it in a manifest, with a model to show for it, and
+  then you can spawn it by name.
+
+Your balloon is an archetype. Your mod spawns one and moves it.
+
+## What you are building
+
+Content lives under `workshop/`, and the path is the identity — an addon does not get
+to name itself. Use your own handle in place of `you`.
+
+<FileTree>
+- workshop
+  - **you** your namespace
+    - addon.toml marks this an addon root
+    - mods
+      - **balloon** the mod — this name IS its identity
+        - mod.toml
+        - balloon.glb the model your archetype shows
+        - Cargo.toml
+        - .cargo/config.toml
+        - wit
+          - world.wit
+          - deps/ironlark-host/host.wit a copy of the host's contract
+        - server
+          - Cargo.toml
+          - src/lib.rs
+</FileTree>
+
+## Build it
+
+<Steps>
+
+1. **Mark the addon root** — `workshop/you/addon.toml`
+
+   ```toml
+   [addon]
+   version = "0.1.0"
+   description = "My first addon."
+   ```
+
+   Everything from here happens in `workshop/you/mods/balloon/`.
+
+2. **Get a shape**
+
+   Your archetype needs a model. Copy one from the engine's own content to start with,
+   so you are not fighting Blender on your first day.
+
+   <Tabs syncKey="os">
+     <TabItem label="Windows">
+
+   ```powershell
+   Copy-Item <install>\assets\workshop\core\mods\balloons\balloon.glb .
+   ```
+
+     </TabItem>
+     <TabItem label="Linux">
+
+   ```sh
+   cp <install>/assets/workshop/core/mods/balloons/balloon.glb .
+   ```
+
+     </TabItem>
+   </Tabs>
+
+   Authoring your own comes later; see [Maps](/maps/) for the glTF conventions.
+
+3. **Declare the archetype** — `mod.toml`
+
+   This is where your mod tells the host what it publishes. Notice it does not declare
+   a name for itself: the directory is the name, because a manifest can claim anything
+   and an install path cannot.
+
+   ```toml
+   [mod]
+   version = "0.1.0"
+
+   [[provides.archetype]]
+   id = "balloon"
+   scene = "balloon.glb"
+   ```
+
+   Your archetype's full id is now `you:balloon/balloon` — the addon namespace, the mod
+   directory, the archetype id.
+
+4. **Pin the target** — `.cargo/config.toml`
+
+   So a plain `cargo build` never falls back to the native target.
+
+   ```toml
+   [build]
+   target = "wasm32-wasip2"
+   ```
+
+5. **Set up the workspace** — `Cargo.toml`
+
+   A workspace rather than a plain crate, because a mod may later grow a `client/` half
+   beside the server one.
+
+   ```toml
+   [workspace]
+   resolver = "2"
+   members = ["server"]
+
+   [workspace.package]
+   version = "0.1.0"
+   edition = "2024"
+
+   [workspace.dependencies]
+   wit-bindgen = "0.58"
+
+   [profile.release]
+   opt-level = "z"
+   lto = true
+   strip = true
+   ```
+
+6. **The server crate** — `server/Cargo.toml`
+
+   ```toml
+   [package]
+   name = "balloon-server"
+   version.workspace = true
+   edition.workspace = true
+
+   [lib]
+   crate-type = ["cdylib"]
+
+   [dependencies]
+   wit-bindgen = { workspace = true }
+   ```
+
+7. **Name your package** — `wit/world.wit`
+
+   ```wit
+   package you:balloon@0.1.0;
+   ```
+
+8. **Vendor the host contract**
+
+   Your bindings generator reads it.
+
+   <Tabs syncKey="os">
+     <TabItem label="Windows">
+
+   ```powershell
+   New-Item -ItemType Directory -Force wit\deps\ironlark-host
+   Copy-Item <install>\assets\workshop\core\mods\balloons\wit\deps\ironlark-host\host.wit `
+     wit\deps\ironlark-host\
+   ```
+
+     </TabItem>
+     <TabItem label="Linux">
+
+   ```sh
+   mkdir -p wit/deps/ironlark-host
+   cp <install>/assets/workshop/core/mods/balloons/wit/deps/ironlark-host/host.wit \
+      wit/deps/ironlark-host/
+   ```
+
+     </TabItem>
+   </Tabs>
+
+   <Aside type="caution" title="Keep this copy current">
+   A stale contract fails to instantiate, quietly, and it is the second most common
+   reason a mod does not load.
+   </Aside>
+
+</Steps>
+
+## Spawn it, before you make it move
+
+Resist writing the movement yet. Get one balloon standing still in the world first —
+the failures that bite happen at load time, and you want to meet them while the file
+is short.
+
+`server/src/lib.rs`:
+
+```rust
+wit_bindgen::generate!({
+    path: "../wit",
+    world: "ironlark:host/server-mod",
+});
+
+use exports::ironlark::host::server_api::Guest;
+use ironlark::host::entity::{SpawnTransform, Vec3, identify, spawn};
+use ironlark::host::log::{Level, log};
+
+const BALLOON: &str = "balloon";
+
+struct Component;
+
+impl Guest for Component {
+    async fn init() {
+        let at = SpawnTransform {
+            position: Vec3 { x: 0.0, y: 2.0, z: 5.0 },
+            yaw: 0.0,
+        };
+        let handle = match spawn("you:balloon/balloon".into(), at).await {
+            Ok(handle) => handle,
+            Err(e) => {
+                log(Level::Error, &format!("balloon: spawn failed: {e}"));
+                return;
+            }
+        };
+        if let Err(e) = identify(&handle, BALLOON.into()).await {
+            log(Level::Error, &format!("balloon: identify failed: {e}"));
+            return;
+        }
+        log(Level::Info, "balloon: spawned");
+    }
+
+    async fn update(_dt: f32) {}
+
+    // The rest of the world's exports. A component that does not implement every
+    // one of them will not instantiate, so the ones with nothing to do are empty.
+    async fn on_player_join(_player_id: String) {}
+    async fn on_player_leave(_player_id: String) {}
+    async fn on_signal(_channel: String, _source: String, _payload: Vec<u8>) {}
+
+    async fn on_interact(
+        _player_id: String,
+        _target: String,
+        _hit_point: exports::ironlark::host::server_api::Vec3,
+        _distance: f32,
+    ) {
+    }
+
+    async fn on_contact(
+        _target: String,
+        _other: exports::ironlark::host::server_api::ContactParty,
+        _point: exports::ironlark::host::server_api::Vec3,
+        _edge: exports::ironlark::host::server_api::ContactEdge,
+    ) {
+    }
+
+    async fn handle_rpc(
+        _player_id: String,
+        method: String,
+        _args: Vec<u8>,
+    ) -> Result<Vec<u8>, String> {
+        Err(format!("unknown method: {method}"))
+    }
+}
+
+export!(Component);
+```
+
+Two things worth stopping on.
+
+`identify` gives the entity a name you choose. You need it because a handle does not
+survive between calls — next tick, `find` is how you get your balloon back.
+
+<Aside type="caution" title="The empty exports are not optional">
+A component missing one of them does not instantiate at all, and the failure says
+nothing obvious about a missing function.
+</Aside>
+
+Build it:
+
+```sh
+cargo build --release
+```
+
+## Run it
+
+The host only loads content it can find, so put the built component where the loader
+looks — beside `mod.toml` — then host a session pointed at your content root.
+
+<Tabs syncKey="os">
+  <TabItem label="Windows">
+
+```powershell
+Copy-Item target\wasm32-wasip2\release\balloon_server.wasm .
+.\ironlark-game.exe --become-host --content <your content root>
+```
+
+  </TabItem>
+  <TabItem label="Linux">
+
+```sh
+cp target/wasm32-wasip2/release/balloon_server.wasm .
+./ironlark-game --become-host --content <your content root>
+```
+
+  </TabItem>
+</Tabs>
+
+Starting the game yourself also means supplying the endpoints it would have got from
+the launcher — see [Command line](/reference/command-line/). Hosting through the
+launcher works too; `--content` is the only reason to use a terminal here.
+
+In the log you should see, in this order:
+
+```
+workshop: 2 addon(s) — core, you
+registry: indexed archetype 'you:balloon/balloon' (scene workshop/you/mods/balloon/balloon.glb)
+spawn: spawned registry archetype 'you:balloon/balloon' entity 354v0 at Vec3(0.0, 2.0, 5.0)
+balloon: spawned
+```
+
+<Aside type="tip">
+You will also see `mod you:balloon has no client half`. That is information, not an
+error — your mod is server-only, which is what you want.
+</Aside>
+
+Go and look at it. There should be a balloon in front of you, hanging still.
+
+## Make it bob
+
+Now the movement. Each tick: find the balloon, read where it is, write where it should
+be.
+
+<Steps>
+
+1. **Add the imports**
+
+   ```rust
+   use std::sync::Mutex;
+   use ironlark::host::entity::{ComponentField, FieldValue, find, get_component, set_component};
+   ```
+
+2. **Add the constants**
+
+   ```rust
+   const CENTRE_Y: f32 = 2.0;
+   const AMPLITUDE: f32 = 0.5;
+
+   /// Seconds since the balloon spawned. `update` is given a delta, not a clock.
+   static ELAPSED: Mutex<f32> = Mutex::new(0.0);
+   ```
+
+3. **Replace the empty `update`**
+
+   ```rust
+   async fn update(dt: f32) {
+       let elapsed = {
+           let mut elapsed = ELAPSED.lock().unwrap();
+           *elapsed += dt;
+           *elapsed
+       };
+
+       let Ok(found) = find(BALLOON.into()).await else {
+           return;
+       };
+       let Some(handle) = found.into_iter().next() else {
+           return;
+       };
+
+       let Ok(fields) =
+           get_component(&handle, "transform".into(), vec!["translation".into()]).await
+       else {
+           return;
+       };
+       let Some(mut position) = fields.into_iter().find_map(|field| match field.value {
+           FieldValue::Vec3(v) => Some(v),
+           _ => None,
+       }) else {
+           return;
+       };
+
+       position.y = CENTRE_Y + elapsed.sin() * AMPLITUDE;
+
+       let translation = ComponentField {
+           path: "translation".into(),
+           value: FieldValue::Vec3(position),
+       };
+       if let Err(e) = set_component(&handle, "transform".into(), vec![translation]).await {
+           log(Level::Error, &format!("balloon: set-component failed: {e}"));
+       }
+   }
+   ```
+
+4. **Rebuild, copy the component beside `mod.toml` again, and host.**
+
+   The balloon bobs.
+
+</Steps>
+
+<Aside type="caution" title="Accumulate dt; never count ticks">
+`update` is fire-and-forget, so a tick where your mod was still busy is skipped, and a
+full queue drops the call. Counting them drifts. See
+[Limits and pacing](/build/limits/).
+</Aside>
+
+## When it does not appear
+
+| What you see | What it is |
+|---|---|
+| `workshop: 1 addon(s) — core` | the game is not looking at your content root. Pass `--content`. |
+| your addon listed, your mod not | `mod.toml` is missing or does not parse. The log names the file. |
+| the mod listed, nothing spawns | the component did not instantiate: a missing export, or a stale `host.wit`. |
+| your old behaviour, after a rebuild | the stale `.wasm` beside `mod.toml` shadows the fresh build. Copy it again. |
+
+More in [Troubleshooting a mod](/build/troubleshooting/).
+
+## Next
+
+- [Write your first gamemode](/start/first-gamemode/) — owning the rules of a session, including where players appear
+- [Archetypes](/addons/archetypes/) — making things pressable, touchable, or walk-through
+- [The boundary today](/boundary/) — what the engine cannot do yet, before you design something that needs it

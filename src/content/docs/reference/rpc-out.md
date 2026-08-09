@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "rpc-out"
 sidebar:
   order: 70

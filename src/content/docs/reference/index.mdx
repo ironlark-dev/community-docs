@@ -2,6 +2,7 @@
 title: "Interface reference"
 description: "Every function the host exposes to a mod, and every function a mod must export."
 sidebar:
+  label: "How to read this"
   hidden: true
 ---
 
@@ -15,6 +16,15 @@ about it.
 A mod vendors its own copy of the contract. When a page here and your copy disagree,
 your copy is stale — [download the current one](/host.wit).
 </Aside>
+
+## Running the game
+
+<CardGrid>
+  <LinkCard title="Command line" href="/reference/command-line/"
+    description="Every flag the game takes, and what you must supply when you start it yourself rather than through the launcher." />
+  <LinkCard title="server.toml" href="/server/configuration/"
+    description="Every key an instance's configuration file may carry." />
+</CardGrid>
 
 ## Exported — you implement these, the host calls them
 

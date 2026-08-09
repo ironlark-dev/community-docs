@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "gamemode"
 description: "Host-owned gamemode/session settings a server-mod configures."
 sidebar:

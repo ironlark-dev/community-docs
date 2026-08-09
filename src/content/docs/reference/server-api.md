@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "server-api"
 sidebar:
   order: 10

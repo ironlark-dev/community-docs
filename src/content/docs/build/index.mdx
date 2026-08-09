@@ -1,0 +1,45 @@
+---
+title: "Making things"
+description: "How the modding surface works, one subsystem at a time. Read a page when you need that subsystem; they do not assume each other."
+area: build
+sidebar:
+  order: 1
+  label: "Pick a subsystem"
+---
+
+A mod is a WebAssembly component the host loads. It spawns things, reacts to touch and
+input, and talks to other mods over a bus. What it cannot do is on
+[The boundary today](/boundary/), which is worth reading before you design.
+
+New to this? Start with [Make your first thing](/start/first-balloon/) and come back
+here when you need a specific subsystem.
+
+## Start with these
+
+- [Realms and the session lifecycle](/build/realms-and-lifecycle/) — where your code runs, and when it is loaded and torn down
+- [Entities, bodies and control](/build/entities-and-control/) — everything in the world is an entity, and a body is one a player is driving
+- [Players, identities and entities](/build/players-identities-entities/) — what a player actually is, in four pieces
+
+## Building the world
+
+- [Components](/build/components/) — reading and writing entity state
+- [Interaction](/build/interaction/) — the use key, and why the host decides what was pressed
+- [Contact events](/build/contact-events/) — learning that something touched your thing, and making walk-through zones
+- [Spatial queries](/build/spatial-queries/) — asking the world what is where
+
+## Talking
+
+- [Signals](/build/signals/) — mod to mod, in bytes, over host-routed channels
+- [Broadcast and RPC](/build/broadcast-and-rpc/) — reaching a player's screen, and a keypress reaching the host
+
+## Owning a session
+
+- [Gamemodes](/build/gamemodes/) — the one mod that holds the session's rule layer
+
+## Practicalities
+
+- [Choosing a language](/build/languages/) — what the host requires, and what narrows it today
+- [Limits and pacing](/build/limits/) — the real numbers, and where the host drops your work on purpose
+- [Troubleshooting a mod](/build/troubleshooting/) — it loads, but does not behave
+
+Packaging, naming and publishing content is next door in [Addons](/addons/).

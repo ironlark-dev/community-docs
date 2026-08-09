@@ -1,0 +1,94 @@
+---
+title: "Diagnose a failed join"
+description: "Symptom, cause and fix for a player who cannot get into your session. Everything needed is on this page."
+kind: how-to
+area: server
+sidebar:
+  order: 5
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Read `logs/host.log` and `logs/client.log`, beside the install. The console shows a
+summary; the files carry the detail.
+
+<Aside type="danger" title="Read this before anything else">
+A player who is refused *also* logs that it entered the session, so "it connected"
+proves nothing on its own. What tells the two apart is whether the player is still
+there a moment later.
+
+And when a player is refused, the reason is in **their** log. The host is never told
+it.
+</Aside>
+
+## The player is refused, and something is named
+
+```
+this session runs content this install does not have: <id>. Install it to join
+```
+
+**Cause:** your session enables an addon that player does not have.
+
+**Fix:** they install the named addon and rejoin. There is no partial join on purpose
+— the parts they lack would silently be missing from the world around them, which is
+worse than being turned away.
+
+## The player joins and sees a black screen
+
+**Cause:** almost always the map. The host is on a map that player does not have, so
+their world never loads. Their log says which.
+
+**Fix:** give them the map's addon. Note this reproduces reliably only on the first
+join into a fresh process, so a second attempt "working" does not mean it is fixed.
+
+## Nobody spawns, and no mod seems to run
+
+**Cause:** the host holds every join until **all** server mods report loaded, so one
+component that fails to load stops the entire session — not just itself.
+
+**Fix:** look near session start in the host log for a load error, or an
+`already loaded; ignoring` warning. In order of how often it is the answer:
+
+1. **A missing export.** A component that does not implement every function of its
+   world will not instantiate. Write the empty stubs.
+2. **A stale vendored contract.** The mod's copy of `host.wit` must match the host's.
+   A mismatch fails to instantiate, quietly.
+3. **Two mods with the same directory name.** The second is ignored with a warning.
+
+## The session refuses to start and names two gamemodes
+
+**Cause:** two installed mods can hold the gamemode role and nothing chose one.
+
+**Fix:** working as intended — name one. Either `--gamemode <id>` for this run, or
+`[session] gamemode` in `config/server.toml` to settle it.
+
+## The player is present, then gone a moment later
+
+**Cause:** one of the refusals above. The host log will not tell you which.
+
+**Fix:** get their `logs/client.log`. The reason is the first error in it after the
+join attempt.
+
+## Nothing connects at all, for anyone
+
+**Cause:** connection setup, not content. Both peers must be able to reach the
+signalling and core servers, and both must be on the same game version.
+
+**Fix:** confirm both players can log in at all — a failure to authenticate looks like
+a failure to connect. There is no port to forward, so do not go looking for one; see
+[Connectivity](/server/connectivity/) for what actually carries the traffic.
+
+If it worked yesterday and does not today, check you are on a current build before
+debugging anything: the servers a build talks to are compiled into it, so a moved
+domain breaks an older build in exactly this way. See
+[when it breaks](/start/install/#when-it-breaks).
+
+## One player cannot connect, and everyone else can
+
+**Cause:** their network, most likely. When no direct path exists, traffic goes
+through a relay, and some networks cannot reach the one we hand out. Relay traffic is
+UDP, so a network that blocks it has no fallback.
+
+**Fix:** this is not something you can configure from your side. Send us their
+`logs/client.log` in [Discord](https://discord.gg/jAQU93uMy4) — we can put them on a
+different relay.

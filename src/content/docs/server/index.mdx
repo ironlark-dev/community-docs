@@ -1,0 +1,31 @@
+---
+title: "Running a server"
+description: "Hosting a session, deciding what it runs, and working out why somebody cannot join."
+area: server
+sidebar:
+  order: 1
+  label: "What hosting means today"
+---
+
+Hosting today means running the game yourself with `--become-host`. There is no
+dedicated server — a host with nobody attached — and there is no port to forward.
+Both of those surprise people who have hosted other games, so both are covered below
+before anything else.
+
+## Start here
+
+- [Run a server](/start/run-a-server/) — nothing to a session somebody has joined
+
+## Operating it
+
+- [Configuration](/server/configuration/) — `config/server.toml`, every key, and the part that carries into a dedicated server unchanged
+- [Choosing addons](/server/enabled-addons/) — installed is not enabled; what every player must have
+- [Connectivity](/server/connectivity/) — why there is no port, and what carries traffic when a direct path fails
+- [Diagnose a failed join](/server/diagnose-a-failed-join/) — symptom, cause, fix
+
+## Not built yet
+
+A dedicated server you can start on a machine and leave running. What you configure
+today is read from the same file a dedicated server will read, so the work is not
+throwaway — see [Configuration](/server/configuration/), and
+[the roadmap](/roadmap/) for where this is going.
