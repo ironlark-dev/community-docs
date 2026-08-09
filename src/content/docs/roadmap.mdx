@@ -1,0 +1,92 @@
+---
+title: "Roadmap"
+description: "What Ironlark has shipped, what it is committed to next, and what it intends after that. No dates."
+sidebar:
+  order: 40
+---
+
+import { Aside, Badge } from '@astrojs/starlight/components';
+
+Ironlark is built by a small team. We build what a platform cannot work without
+first, and the more ambitious things after that. Both lists are below, so you can see
+which is which.
+
+<Aside type="note" title="No dates on this page, ever">
+A date is a forecast, and a forecast is a debt. What we publish instead is what has
+already landed, and you can check that against the public history of this repository.
+</Aside>
+
+Three states:
+
+| State | Means |
+|---|---|
+| **Shipped** | it works today, and there are docs for it |
+| **Committed** | we are building it; the shape below is what we are building |
+| **Intended** | we want it and we are not working on it yet |
+
+Anything not on this page is not planned. What exists today and what does not is
+[The boundary today](/boundary/).
+
+## Shipped <Badge text="works today" variant="success" />
+
+Newest first. Entries from here on carry the release they landed in.
+
+- **Per-instance content root** — one instance can be pointed at its own content, so two on a machine can differ
+- **Content announced to joining players** — a session tells a peer exactly what it runs, and refuses a peer that lacks it
+- **A stated protocol version** — a peer speaking a different one is refused, and told so
+- **The enabled addon set** — a session runs the addons it lists, in the order it lists them → [Choosing addons](/server/enabled-addons/)
+- **Gamemode designation** — one mod holds the session's rule layer → [Gamemodes](/build/gamemodes/)
+- **Relay pool from the core server** — NAT traversal without configuring anything → [Connectivity](/server/connectivity/)
+- **Session handover from the launcher** — the game resumes a session instead of taking a password
+- **Spatial queries** — ray and overlap against the world → [Spatial queries](/build/spatial-queries/)
+- **Contact events and trigger volumes** — a mod learns when something touched its things → [Contact events](/build/contact-events/)
+- **The signal bus** — mods talk to each other in bytes over host-routed channels → [Signals](/build/signals/)
+
+## Committed <Badge text="being built" variant="caution" />
+
+### Dedicated servers
+
+**What it will do.** Run a session with nobody attached: a host process on a machine
+you control, started before anyone joins and still running after everyone leaves.
+
+**Today.** You host from the game with `--become-host`, and the session lives as long
+as you stay in it. See [Run a server](/start/run-a-server/).
+
+**Carries over.** An instance is configured by `config/server.toml`, and the host
+already reads it the way a server needs to — `--config` points at a file anywhere,
+`[content] root` keeps content separate from configuration. A dedicated server changes
+which process reads that file, not the file.
+
+### An SDK
+
+**What it will do.** Scaffold a mod, build it locally, and let you test it without
+standing up a full session.
+
+**Today.** You lay out the files yourself and build with `cargo`, and testing means
+hosting a session. [Write your first gamemode](/start/first-gamemode/) walks the whole
+thing.
+
+### Addon distribution
+
+**What it will do.** Package an addon into a single signed file, and install one
+without copying directories by hand — so a server can hand players the content it
+runs.
+
+**Today.** Content is discovered from its install path, and every player installs
+addons manually. Note that identity is derived from where the files sit, and that
+scheme may still move before packaging lands, so treat a published addon name as not
+yet final.
+
+## Intended <Badge text="not started" variant="default" />
+
+We want these. We are not working on them, and nothing here should be planned around.
+
+- **Composition hooks** — a way for mods to take part in each other's decisions instead of only observing
+- **An input surface** — named actions a mod can bind, rather than one debug key
+- **A real UI surface** — panels and layout, rather than one line of overlay text
+- **Authoring tools** — programs for building worlds and content directly, rather than a modelling package plus a hand-written manifest
+- **More languages** — synchronous imports, so toolchains without async component support can implement the world
+- **Persistence** — a key-value store of bytes a mod owns, with where those bytes live (memory, SQLite, Postgres) an operator's configuration choice behind one unchanging interface
+- **Personas** — splitting account from character, so a player can have several, each with its own traits and saved state
+- **Audio** — there is no sound API at all
+- **Server mesh** — sessions that span more than one host

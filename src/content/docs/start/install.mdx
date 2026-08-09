@@ -1,0 +1,110 @@
+---
+title: "Install and run"
+description: "Getting Ironlark onto your machine, where it puts things, and what to install on top depending on what you want to build."
+kind: how-to
+area: start
+sidebar:
+  order: 1
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Ironlark is in closed pre-alpha, so builds are not published openly yet. Ask in
+[Discord](https://discord.gg/jAQU93uMy4) for access; that is also where you say when
+something here is wrong.
+
+Windows and Linux are both first-class. Ironlark is developed on Linux — the engine
+and the first-party addons are written and tested there — so the Linux build is native
+rather than an afterthought, and it stays that way. Where a command differs between
+the two, this site shows both.
+
+## When it breaks
+
+It will, sometimes. We are iterating quickly and a pre-alpha build is a moving target.
+
+The most common way this bites: **the servers a build talks to are compiled into it.**
+If we move a domain, an older build keeps trying the old one and simply fails to sign
+in or to reach anyone. Nothing you can configure fixes that — you need a newer build.
+So when something stops working that worked yesterday, ask for a current build before
+you debug anything else.
+
+This gets better. Every part of it is a thing we intend to stop doing, and the list of
+ways a build can be wrong gets shorter as the platform settles. Until then, if you hit
+something, say so in [Discord](https://discord.gg/jAQU93uMy4) and we will help you as
+quickly as we can. You are a small group and we would rather unblock you directly than
+have you lose an evening.
+
+## The launcher
+
+The launcher is how you get the game and keep it current. It downloads a build,
+verifies it, signs you in, and starts the game as a host or a joining player.
+
+By default it installs into `.ironlark` in your home directory, with the game and its
+content beneath it:
+
+<Tabs syncKey="os">
+  <TabItem label="Windows">
+
+```text
+.ironlark\
+  windows\
+    ironlark-game.exe
+    assets\
+      workshop\            installed content lives here
+    config\
+      server.toml          your instance's settings, if you write one
+    logs\
+      host.log
+      client.log
+```
+
+  </TabItem>
+  <TabItem label="Linux">
+
+```text
+.ironlark/
+  linux/
+    ironlark-game
+    assets/
+      workshop/            installed content lives here
+    config/
+      server.toml          your instance's settings, if you write one
+    logs/
+      host.log
+      client.log
+```
+
+  </TabItem>
+</Tabs>
+
+You can point the launcher somewhere else. Everything on this site that says "beside
+the install" means this directory.
+
+## Log in
+
+Hosting and joining both need an account: a session is addressed by the identity of
+whoever is hosting it, so there is no anonymous play. The launcher holds your
+credentials, and hands the game a session — the game itself never sees your password.
+
+## Then, depending on what you came for
+
+**To play with people:** [Run a server](/start/run-a-server/). There is no port to
+forward and no server to rent; you host from the game.
+
+**To build something:** [Make your first thing](/start/first-balloon/). You will also
+need a Rust toolchain with the `wasm32-wasip2` target:
+
+```sh
+rustup target add wasm32-wasip2
+```
+
+The host loads WebAssembly components and does not care what language wrote them, but
+Rust is the only toolchain this has been done in — [Choosing a
+language](/build/languages/) is honest about why.
+
+**To author worlds:** [Maps](/maps/). Blender, with glTF export.
+
+## Before you plan anything large
+
+Read [The boundary today](/boundary/). It is the list of things the engine cannot do
+yet, and it is much cheaper to read now than to discover halfway through a build.

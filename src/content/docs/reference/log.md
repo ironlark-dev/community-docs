@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "log"
 sidebar:
   order: 110

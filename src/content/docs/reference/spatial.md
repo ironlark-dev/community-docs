@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "spatial"
 description: "Read-only spatial queries over the physical world: the sensing counterpart of contact events. Sees map colliders and flagged-entity proxies (archetypes with `interact`/`contact`); character bodies are not raycastable. A hit on another mod's entity reports geometry but no handle — cross-mod reach stays the signal bus, matching `find`'s namespace scoping."
 sidebar:

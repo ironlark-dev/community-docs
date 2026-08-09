@@ -1,0 +1,96 @@
+---
+title: "Configuration"
+description: "One file decides what an instance runs. It is also the part of today's setup that survives into a dedicated server unchanged."
+kind: reference
+area: server
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+An instance is configured by one file, `config/server.toml`, beside the install.
+Sections inside it, never a file per topic.
+
+<Aside type="danger" title="Secrets do not go in this file">
+Credentials arrive through the environment. A process's command line is readable by
+anyone on the machine, and a configuration file is the thing you commit and share.
+</Aside>
+
+## The whole file
+
+```toml
+[session]
+addons = ["core", "ironlark:examples"]
+gamemode = "core:freeroam"
+map = "core:badgrass"
+
+[content]
+root = "/srv/ironlark/content"
+```
+
+Every key is optional. A missing file is ordinary — somebody who installed the game
+and pressed Host has never written one. A file that exists and does **not** parse is
+an error and stops the process: you wrote it and meant it, and running a different
+configuration than you asked for is worse than refusing to start.
+
+## `[session]`
+
+| Key | Type | Meaning |
+|---|---|---|
+| `addons` | list of ids | Addons to enable, in load order. Load order is also init order, so a mod that reacts to another's startup can rely on it. |
+| `gamemode` | id | Which mod holds the gamemode role. |
+| `map` | id | Map to load. |
+
+`addons` has three states, and they are three different intentions:
+
+| Written | Means |
+|---|---|
+| key absent | nobody has curated this install; everything installed runs |
+| `addons = []` | curated down to the baseline alone |
+| `addons = [...]` | exactly these, in this order |
+
+`gamemode` unset resolves to the only installed candidate. With none, the session runs
+bare. With several and no choice made, the session **refuses to start** and names them
+— the host will not guess which rules you meant.
+
+## `[content]`
+
+| Key | Type | Meaning |
+|---|---|---|
+| `root` | path | Directory holding `workshop/`. Absent means the install's own `assets/`. |
+
+Content is deployed unlike anything else here: the same addons back many instances,
+the directory can be read-only, and one copy can sit behind several instances at once.
+That is why it is its own section and its own path.
+
+## Overriding for one run
+
+Precedence is defaults, then the file, then the command line:
+
+| Flag | Overrides |
+|---|---|
+| `--config <path>` | which file is read at all |
+| `--content <dir>` | `[content] root` |
+| `--map <id>` | `[session] map` |
+| `--gamemode <id>` | `[session] gamemode` |
+
+A scripted or one-off run can override a deployment without editing it.
+
+## Your configuration outlives this setup
+
+Hosting today means running the game as the host, and the session ends when you leave.
+A dedicated server — a host with no player attached — is planned and not built.
+
+What you write now is not throwaway, and this is checkable rather than promised:
+
+- `--config` names the file, so it does not have to sit beside the install.
+- `[content] root` names the content directory separately, so one read-only copy of
+  `workshop/` can serve several instances.
+
+<Aside type="tip" title="What carries over">
+Both work today. A dedicated server changes **which process reads that file**, not the
+file. The same `[session] addons`, `gamemode` and `map` will select the same things.
+Write your server as a file now, and moving it later is a deployment change rather
+than a rewrite.
+</Aside>

@@ -1,4 +1,6 @@
 ---
+kind: reference
+area: reference
 title: "map-api"
 description: "Host-owned, read-only queries over the loaded map (mapping track). Lets a gamemode compute spawn placement from the map's data instead of taking the host default. Grows into zones / named-entity / surface queries later."
 sidebar:
