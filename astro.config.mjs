@@ -26,7 +26,7 @@ export default defineConfig({
         { icon: 'github', label: 'GitHub', href: 'https://github.com/ironlark-dev' },
         { icon: 'discord', label: 'Discord', href: 'https://discord.gg/jAQU93uMy4' },
       ],
-      description: 'Build maps, mods and gamemodes for the Ironlark engine.',
+      description: 'How Ironlark works, and how to run, extend and build on it.',
       editLink: {
         baseUrl: 'https://github.com/ironlark-dev/community-docs/edit/master/',
       },
