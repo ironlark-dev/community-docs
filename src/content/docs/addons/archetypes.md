@@ -19,7 +19,7 @@ In `mod.toml`:
 [mod]
 version = "0.1.0"
 
-[[provides.archetype]]
+[[declares.archetype]]
 id = "balloon"              # the name, within your mod
 scene = "balloon.glb"       # a glTF file beside mod.toml
 replication = "dynamic"     # static | dynamic | high-frequency

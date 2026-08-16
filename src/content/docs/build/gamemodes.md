@@ -16,7 +16,7 @@ A mod says what it *can* be, in `mod.toml`:
 [mod]
 version = "0.1.0"
 
-[provides]
+[declares]
 roles = ["gamemode"]
 ```
 
