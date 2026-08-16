@@ -11,7 +11,7 @@ sidebar:
 ## Opt in
 
 ```toml
-[[provides.archetype]]
+[[declares.archetype]]
 id = "button"
 scene = "button.glb"
 replication = "dynamic"

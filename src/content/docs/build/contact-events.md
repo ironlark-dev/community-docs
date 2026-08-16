@@ -17,7 +17,7 @@ lava floors and portals. It is the most useful thing in the engine for gameplay 
 An archetype only produces touch events if its manifest says so:
 
 ```toml
-[[provides.archetype]]
+[[declares.archetype]]
 id = "zone"
 scene = "zone.glb"
 replication = "static"

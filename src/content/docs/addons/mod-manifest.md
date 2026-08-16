@@ -13,10 +13,10 @@ sidebar:
 version = "0.1.0"
 description = "optional, for humans"
 
-[provides]
+[declares]
 roles = ["gamemode"]
 
-[[provides.archetype]]
+[[declares.archetype]]
 id = "zone"
 scene = "zone.glb"
 replication = "static"
@@ -39,9 +39,13 @@ not allow.
 Unknown keys in `[mod]` are tolerated — `description` is conventional and ignored by the
 engine.
 
-## `[provides]`
+## `[declares]`
 
-Optional as a whole: a mod that publishes no content and fills no role can omit it.
+Optional as a whole: a mod that declares no content and fills no role can omit it.
+
+Everything a mod claims a name for lives under this one word. `archetype` is the kind that
+exists today; the grammar reserves `channel`, `method`, `action` and `feature` for the same
+place.
 
 **Unknown keys here are rejected** and stop the manifest from parsing, because a silently
 ignored typo is a declaration that never applied with nothing saying so.
@@ -49,18 +53,18 @@ ignored typo is a declaration that never applied with nothing saying so.
 | Key | Meaning |
 |---|---|
 | `roles` | Session roles this mod can fill. `["gamemode"]` is the only one implemented; an unrecognised role name fails the manifest rather than being ignored. A role is a statement of capability — the server still names the holder. |
-| `archetype` | Repeated `[[provides.archetype]]` blocks; see below. |
+| `archetype` | Repeated `[[declares.archetype]]` blocks; see below. |
 
-## `[[provides.archetype]]`
+## `[[declares.archetype]]`
 
-One block per publishable entity recipe. See [Archetypes](/addons/archetypes/) for what each does
-in practice.
+One block per entity recipe this mod declares. See [Archetypes](/addons/archetypes/) for what
+each does in practice.
 
 | Key | Required | Default | Meaning |
 |---|---|---|---|
-| `id` | **yes** | — | Name within this mod. Spawned as `<namespace>:<mod>/<id>`. |
+| `id` | **yes** | — | Name within this mod. Your own code spawns it by this bare name; another mod spawns it as `<author>:<addon>:<mod>/archetype/<id>`. |
 | `scene` | **yes** | — | glTF/`.glb` file beside `mod.toml`. |
-| `replication` | no | `static` | `static`, `dynamic` or `high-frequency`. |
+| `replication` | no | `dynamic` | `static`, `dynamic` or `high-frequency`. |
 | `interact` | no | `false` | Use-presses on instances call `on-interact`. |
 | `contact` | no | `false` | Touches on instances call `on-contact`. |
 | `solid` | no | `true` | `false` makes it a pass-through trigger volume. |
