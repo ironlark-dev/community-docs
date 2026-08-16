@@ -8,9 +8,15 @@ sidebar:
   order: 60
 ---
 
+```toml
+# mod.toml — a channel is yours only if you declare it
+[declares]
+channels = ["pressed"]
+```
+
 ```rust
-signal::subscribe("core:buttons/pressed")?;           // usually in init
-signal::emit("core:buttons/pressed", payload)?;       // any time after
+signal::emit("pressed", payload)?;                          // your own, bare
+signal::subscribe("ironlark:core:buttons/channel/pressed")?; // someone else's, in full
 ```
 
 A subscriber receives `server-api::on-signal(channel, source, payload)`. Server realm only.
@@ -24,24 +30,27 @@ mechanism the engine does not have yet.
 
 There is no replay either: a late subscriber misses history. Subscribe in `init`.
 
-## `source` is trustworthy; the channel name is convention
+## `source` is trustworthy, and so is the channel name
 
 The host stamps `source` with the emitting mod's id — a mod cannot forge it. So "only obey
 the gamemode" is one comparison:
 
 ```rust
 async fn on_signal(channel: String, source: String, payload: Vec<u8>) {
-    if source != "core:freeroam" { return; }
+    if source != "ironlark:core:freeroam" { return; }
     ...
 }
 ```
 
-Channel names are pure convention (`addon:name` in the owner's namespace) and are never
-enforced, because commands legitimately cross namespaces: a gamemode emitting on another
-mod's command channel is the intended shape.
+You never write your own id. You say `pressed` and the host makes it
+`ironlark:core:buttons/channel/pressed`, so a fork of your addon talks on its own channels
+instead of the upstream's.
 
-Channels are matched as **exact strings**, so renaming a mod or a channel breaks every
-partner silently. There is no compile-time link between two mods.
+**Ownership is not enforced, but existence is.** Anyone may emit on a channel you own — a
+gamemode commanding another mod's channel is the intended shape. What is refused is a name
+nobody declared: `subscribe` used to accept any string and return ok, so a renamed channel
+left a subscriber that never fired and an emitter nobody heard, with nothing anywhere saying
+why. Both sides now fail where the name is written, naming the manifest to check.
 
 ## Put the data in the payload
 

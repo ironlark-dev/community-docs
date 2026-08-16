@@ -15,6 +15,9 @@ description = "optional, for humans"
 
 [declares]
 roles = ["gamemode"]
+channels = ["opened"]
+methods = ["buy"]
+actions = ["echo"]
 
 [[declares.archetype]]
 id = "zone"
@@ -53,7 +56,19 @@ ignored typo is a declaration that never applied with nothing saying so.
 | Key | Meaning |
 |---|---|
 | `roles` | Session roles this mod can fill. `["gamemode"]` is the only one implemented; an unrecognised role name fails the manifest rather than being ignored. A role is a statement of capability — the server still names the holder. |
+| `channels` | Signal channels this mod owns. `emit` and `subscribe` accept a bare name only if it is listed here; anyone may emit on a channel you own. |
+| `methods` | RPC methods this mod answers. A `call` goes to the mod that declared the method and to no other. |
+| `actions` | Host input actions this mod answers in `on-input`. These are the host's names, not yours, so a name the host does not publish fails at session start. |
 | `archetype` | Repeated `[[declares.archetype]]` blocks; see below. |
+
+Every name here is `[a-z0-9][a-z0-9-]*` — lowercase ASCII, digits and hyphens.
+Uppercase is rejected, not folded.
+
+A name you declare is yours: the host addresses it as
+`<author>:<addon>:<mod>/<kind>/<name>`, and your code writes only the bare name.
+Another mod's name is written in full, and is accepted only if that mod declares
+it — which is what turns a renamed channel from a handler that silently never
+runs into an error naming the manifest to check.
 
 ## `[[declares.archetype]]`
 

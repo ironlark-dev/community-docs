@@ -37,14 +37,24 @@ async fn on_message(channel: String, data: Vec<u8>) {
 
 ## Client to server
 
-```rust
-let reply = rpc_out::call(method, args).await?;   // client half only
+```toml
+# mod.toml — a method is yours only if you declare it
+[declares]
+methods = ["buy"]
 ```
 
-The host routes the call to whichever loaded server mod claims that method in `handle-rpc`.
-A mod that does not own the method returns an error and the host keeps looking, so unrelated
-mods coexisting is fine — but two mods claiming one name is a race you should avoid by
-namespacing method names.
+```rust
+let reply = rpc_out::call("buy", args).await?;   // client half only
+```
+
+The host routes the call to the mod that **declared** that method, and to no other. Your
+server half receives the bare name in `handle-rpc`; a name carrying `:` names another mod's
+method. An undeclared name is refused at the call.
+
+Two mods may each declare `buy`: the host qualifies each with its owner, so they are
+different methods and neither shadows the other. Before methods were declared, the host
+offered a call to every loaded mod until one answered, which made whichever mod sorted first
+able to reject everybody else's RPCs.
 
 ## The pattern that avoids lying to yourself
 
