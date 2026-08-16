@@ -13,13 +13,24 @@ piece of feedback a player sees is a message that crossed between them.
 
 ## Server to client
 
-```rust
-broadcast::send(channel, payload).await;                 // everyone
-broadcast::send_to(&player_id, channel, payload).await;  // one player
+```toml
+# mod.toml — a channel is yours only if you declare it
+[declares]
+channels = ["score"]
 ```
 
-Both deliver to the **client halves** of the same mod on the receiving peers, as
-`client-api::on-message(channel, data)`. The payload is bytes: pick your own encoding.
+```rust
+broadcast::send("score", payload).await?;                 // everyone
+broadcast::send_to(&player_id, "score", payload).await?;  // one player
+```
+
+Both deliver to the **client half of the mod that declared the channel**, on the receiving
+peers, as `client-api::on-message(channel, data)`. The payload is bytes: pick your own
+encoding.
+
+You write the bare name; the host qualifies it with your mod and delivers on that. Two
+addons may both declare `score` and neither hears the other. An undeclared name is refused
+at the call, which is why both verbs return a result.
 
 `send-to` is what makes per-player state possible — each player's own score, their own
 countdown, "you are it".
@@ -28,10 +39,13 @@ The receiving client half renders it:
 
 ```rust
 async fn on_message(channel: String, data: Vec<u8>) {
-    if channel != MY_CHANNEL { return; }
+    if channel != "score" { return; }   // the bare name you declared
     ui::set_overlay_text(&format!("score: {}", decode(&data)));
 }
 ```
+
+The name arrives bare. Routing already established whose channel it is, so your handler
+never writes your own addon id — and a fork of your addon works unchanged.
 
 `set-overlay-text` replaces one line of text. That is the entire presentation surface today.
 
@@ -68,9 +82,17 @@ broadcast tells you the world agrees.
 
 ## The one available keypress
 
-There is no input system for mods. Exactly one action reaches client halves — `echo`, sent on
-**F** — and every client mod sees it and must filter by name. You cannot register an action or
-bind a key ([why](/boundary/)).
+There is no input system for mods. Exactly one action exists — `echo`, sent on **F**. Declare
+it to receive it:
+
+```toml
+[declares]
+actions = ["echo"]
+```
+
+Only mods that declare an action are called with it, and a name the host does not publish
+fails at session start rather than becoming a handler that never runs. You still cannot
+register an action of your own or bind a key ([why](/boundary/)).
 
 For real interaction use trigger volumes and interact presses, which are proper mechanisms
 routed to the owning mod.
