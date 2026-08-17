@@ -53,30 +53,34 @@ It is also why players do not connect to an address. They connect to **you**.
    Leave it unset and the session takes whatever the configuration selects, or the
    default.
 
-2. **Find your host identity**
+2. **Find your user id**
 
    Your friend needs one thing from you, and it is not an IP address. It is your
-   **identity id** — the id of your account. Every session is addressed by who is
-   hosting it.
+   **user id** — the id of your account. A session is addressed by who is hosting
+   it, so there is no address to forward and no port to open.
 
    It is in your log at startup:
 
    ```
-   INFO authenticated identity=0f5d3a2c-1b7e-4c88-9a41-2d6f0b9e7c15
+   INFO authenticated user=af74f667-2824-4997-acae-361b3faed910 name=Alice
    ```
 
    and again when the session opens:
 
    ```
-   INFO Starting host session: identity=0f5d3a2c-…, username=you
+   INFO Starting host session: user=af74f667-…, name=Alice
    ```
 
    Logs are `logs/host.log` and `logs/client.log`, beside the install. Send your friend
-   that identity id.
+   that user id.
+
+   The `name` beside it is what other players see you called. It comes from your
+   account rather than from anything you pass on the command line, so a joining
+   player cannot arrive under someone else's name.
 
 3. **Have your friend join**
 
-   In their launcher: **Join**, paste the identity into the host field, launch.
+   In their launcher: **Join**, paste your user id into the host field, launch.
 
    A joining player does not choose a map. They load whatever the host is running.
 
@@ -107,7 +111,7 @@ invocation looks for a backend on your own machine and does not find one.
   <TabItem label="Windows">
 
 ```powershell
-.\ironlark-game.exe -c <core server> -i <identity server> -s <signalling websocket> `
+.\ironlark-game.exe -c <core server> -i <sign-in server> -s <signalling websocket> `
   --become-host --map core:badgrass
 ```
 
@@ -115,14 +119,14 @@ invocation looks for a backend on your own machine and does not find one.
   <TabItem label="Linux">
 
 ```sh
-./ironlark-game -c <core server> -i <identity server> -s <signalling websocket> \
+./ironlark-game -c <core server> -i <sign-in server> -s <signalling websocket> \
   --become-host --map core:badgrass
 ```
 
   </TabItem>
 </Tabs>
 
-A joining player passes the same endpoints with `--connect-to <identity>` instead of
+A joining player passes the same endpoints with `--connect-to <user id>` instead of
 `--become-host`. Use the endpoints you were given with your access; every flag is on
 [Command line](/reference/command-line/).
 
