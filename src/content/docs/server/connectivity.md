@@ -18,7 +18,7 @@ drop. Time spent in a router admin panel is time wasted here.
 
 ## Players connect to an identity, not an address
 
-A session is addressed by **who is hosting it** — the host's identity id, which is the
+A session is addressed by **who is hosting it** — the host's user id, which is the
 id of their account. There is no host address anywhere in the system, so there is
 nothing to publish, and nothing that changes when the host's network does.
 

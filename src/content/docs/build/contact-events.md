@@ -54,7 +54,7 @@ async fn on_contact(
 `target` is **your own id** for the instance that was touched, so "which zone was it" is a
 string comparison, and it feeds straight back into `find`.
 
-`other` is who touched it: a `player` (with their identity id), another `entity` (a contact
+`other` is who touched it: a `player` (with their user id), another `entity` (a contact
 archetype, with its owner-scoped id), or `map-geometry`.
 
 Only **edges** cross the boundary — the moment a touch starts and the moment it ends, never a

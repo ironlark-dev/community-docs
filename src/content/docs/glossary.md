@@ -51,11 +51,6 @@ slot — see [Gamemodes](/build/gamemodes/).
 The player running the session. Everything authoritative happens there, and today it
 is a player rather than a dedicated machine — see [Run a server](/start/run-a-server/).
 
-## Identity id
-
-The id of an account, and the thing a session is addressed by. A player joins a host
-by identity, not by an address — see [Run a server](/start/run-a-server/).
-
 ## Listen server
 
 A session hosted by somebody who is also playing in it. It is the only kind Ironlark
@@ -71,6 +66,12 @@ A world, authored as glTF plus a small manifest. Data the host owns, not code �
 A WebAssembly component the host loads. It can have a server half, a client half, or
 both — see [Realms and the session lifecycle](/build/realms-and-lifecycle/).
 
+## Name
+
+What other players see you called. It belongs to your account, and the server states
+it — you never type it in when joining, and nobody can arrive claiming to be someone
+else.
+
 ## Realm
 
 Which side a piece of a mod runs on: the authoritative server, or a player's client.
@@ -81,6 +82,12 @@ The two have different powers — see
 
 A byte payload one mod sends on a named channel that other mods observe. Signals are
 facts, not commands: nobody can consume or override one — see [Signals](/build/signals/).
+
+## User id
+
+The id of an account. It is also the thing a session is addressed by: you join a host
+by its user id rather than by an IP address, because there is no address to
+type — see [Run a server](/start/run-a-server/).
 
 ## Workshop
 

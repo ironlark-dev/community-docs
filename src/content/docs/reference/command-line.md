@@ -20,7 +20,7 @@ were given with your access.
 ```sh
 ./ironlark-game \
   -c <core server> \
-  -i <identity server> \
+  -i <sign-in server> \
   -s <signalling websocket> \
   --become-host
 ```
@@ -30,7 +30,7 @@ were given with your access.
 | Flag | Default | Meaning |
 |---|---|---|
 | `-b`, `--become-host` | off | Host the session. |
-| `--connect-to <id>` | none | Join the session hosted by this identity id. |
+| `--connect-to <id>` | none | Join the session hosted by this user id. |
 | `--map <id>` | configured | Map to load, as `namespace:path`. Host only; a joining player loads the host's. |
 | `--gamemode <id>` | configured | Which mod holds the gamemode role. |
 
@@ -57,8 +57,11 @@ See [Configuration](/server/configuration/) for what goes in the file.
 
 | Flag | Default |
 |---|---|
-| `-u`, `--username` | a local test account |
+| `-e`, `--email` | a local test account |
 | `-p`, `--password` | a local test account |
+
+You sign in with your email address. It is not the name other players see: that
+comes from your account, and the server tells everyone what it is.
 
 The defaults exist for local development against a seeded backend and are not an
 account on anything you would join.

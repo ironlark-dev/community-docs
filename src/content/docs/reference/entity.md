@@ -14,7 +14,7 @@ From `host.wit`. Edit the WIT, not this page.
 | Function | Summary |
 |---|---|
 | [`spawn`](#spawn) | Spawn an entity from an archetype at a transform; returns its handle, or an error (e.g. unknown archetype). `archetype` is the publishing mod's identity then the archetype name — `core:balloons/balloon` — resolved through the content registry (the content registry); `core:character` resolves the built-in character body. |
-| [`control`](#control) | Bind a player controller to a body: control is `Controller -> Body`, SEPARATE from creation — spawn an entity, THEN control it. `player` is a player identity id. |
+| [`control`](#control) | Bind a player controller to a body: control is `Controller -> Body`, SEPARATE from creation — spawn an entity, THEN control it. `player` is a user id. |
 | [`release`](#release) | Release an entity from its controller (inverse of `control`). |
 | [`despawn`](#despawn) | Despawn an entity (and its descendants — e.g. a glTF scene's children), destroying it in the world. |
 | [`set-component`](#set-component) | Write fields into one registered component on an entity. `component` is the component's registered name (e.g. "transform"); each field patches one path within it. |
@@ -44,7 +44,7 @@ control: async func(player: string, entity: borrow<handle>) -> result<_, string>
 
 Bind a player controller to a body: control is `Controller -> Body`, SEPARATE
 from creation — spawn an entity, THEN control it. `player` is a
-player identity id. On the host: the own local player's body becomes the local
+user id. On the host: the own local player's body becomes the local
 player (camera + input); a remote player's body becomes the host's authoritative
 simulation body for that client — driven by its input and broadcast via
 WorldSnapshot. Deferred hard domino: the remote client still spawns its own
