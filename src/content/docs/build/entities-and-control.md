@@ -17,13 +17,19 @@ and a person.
 Creation and control are **separate steps**, deliberately:
 
 ```rust
-let body = entity::spawn("core:character", at).await?;
+let body = entity::spawn("character", at).await?;
 entity::control(&player_id, &body).await?;
 ```
 
-`core:character` is the built-in character body — the movement controller, collider and
-camera rig the engine owns. Anything else you spawn resolves through the content registry as
-`<namespace>:<path>/<archetype>`, e.g. `core:balloons/balloon`.
+`character` is the built-in character body — the movement controller, collider and camera
+rig the engine owns. It carries no colon because it is the engine's name, not an addon's.
+Your own archetypes are spawned by their bare name; another addon's is written in full,
+`ironlark:core:balloons/archetype/balloon`.
+
+**`control` is the gamemode's alone.** Binding a player to a body hands over their camera
+and input, so only the mod holding the gamemode role may call it, and no configuration can
+delegate that. If you are writing a mechanic rather than a gamemode, you do not need it:
+see [who may act on an entity](/build/entity-ownership/).
 
 Because the steps are separate, "spawned but nobody driving it" and "a player with no body"
 are both ordinary states. A spectator is a player whose identity is present and whose body
@@ -48,14 +54,20 @@ let found = entity::find("balloon").await?;        // any time after
 Ids are `/`-delimited so related entities share a prefix: `find("balloon")` returns
 everything beneath it, and `find("")` returns all of your mod's identified entities.
 
-**Naming is scoped to your mod.** You can only identify within your own namespace, and `find`
-only sees your own entities. That is the deliberate boundary: a handle is permission to
-mutate, so handles never cross mods. When two mods must cooperate, they exchange
-[signals](/build/signals/), not handles.
+**Naming is scoped to your mod, and it is additive.** You name within your own namespace,
+`find` sees only names you gave, and your name for an entity never displaces another mod's.
+So an entity can answer to you and to the addon whose archetype it is at the same time,
+which is what lets a content addon drive instances another addon placed.
 
 `body-of(player)` resolves the body a player is driving. That is how a mechanic mod acts on
-the player a hook handed it — teleport them, recolour them — without routing every effect
-through the gamemode.
+the player a handler was called about — teleport them, launch them — without routing every
+effect through the gamemode. It works **inside that handler**, for that player: see
+[who may act on an entity](/build/entity-ownership/).
+
+A handle is not permission. Holding one lets you name an entity in a call; whether the call
+is allowed is decided from the entity itself, every time. That is why passing handles
+between mods would buy nothing, and why mods that cooperate exchange
+[signals](/build/signals/) instead.
 
 ## Parts
 

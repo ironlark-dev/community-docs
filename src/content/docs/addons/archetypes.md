@@ -31,8 +31,10 @@ solid = true                # blocks movement (default)
 Repeat the block per archetype. The full reference for the manifest is
 [`mod.toml`](/addons/mod-manifest/).
 
-The spawn name is your mod's identity plus the archetype id — for a mod at
-`workshop/tutorial/mods/mymode`, `id = "zone"` is spawned as `tutorial:mymode/zone`.
+Inside your own mod you spawn an archetype by its bare id — `spawn("zone", at)` — because a
+mod never writes its own identity. Written in full, for another addon to spawn, that same
+archetype is `<author>:<addon>:<mod>/archetype/zone`: for a mod at
+`workshop/tutorial/hello/mymode`, `tutorial:hello:mymode/archetype/zone`.
 
 ## `replication` — how much wire it deserves
 

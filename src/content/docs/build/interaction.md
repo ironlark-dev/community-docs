@@ -28,7 +28,7 @@ async fn on_interact(player_id: String, target: String, hit_point: Vec3, distanc
 ```
 
 `target` is **your own id** for the instance — so which of your things was pressed is a string
-comparison. As with contact events, an instance you never `identify`-ed produces no events.
+comparison. As with contact events, presses go to the addon that declared the archetype, so an instance you never named still reaches you — `target` is then the bare archetype name.
 
 `hit_point` is where the ray struck, in world space. On a multi-part object that tells you
 *which part* was pressed without needing separate archetypes. `distance` is from the presser's

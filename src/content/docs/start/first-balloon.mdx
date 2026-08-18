@@ -46,14 +46,15 @@ Your balloon is an archetype. Your mod spawns one and moves it.
 ## What you are building
 
 Content lives under `workshop/`, and the path is the identity — an addon does not get
-to name itself. Use your own handle in place of `you`.
+to name itself. Three levels, always: author, addon, mod. Use your own handle in place of
+`you`.
 
 <FileTree>
 - workshop
-  - **you** your namespace
-    - addon.toml marks this an addon root
-    - mods
-      - **balloon** the mod — this name IS its identity
+  - **you** your author segment
+    - **props** an addon
+      - addon.toml marks this an addon root
+      - **balloon** the mod — these three names ARE its identity
         - mod.toml
         - balloon.glb the model your archetype shows
         - Cargo.toml
@@ -70,7 +71,7 @@ to name itself. Use your own handle in place of `you`.
 
 <Steps>
 
-1. **Mark the addon root** — `workshop/you/addon.toml`
+1. **Mark the addon root** — `workshop/you/props/addon.toml`
 
    ```toml
    [addon]
@@ -78,7 +79,7 @@ to name itself. Use your own handle in place of `you`.
    description = "My first addon."
    ```
 
-   Everything from here happens in `workshop/you/mods/balloon/`.
+   Everything from here happens in `workshop/you/props/balloon/`.
 
 2. **Get a shape**
 
@@ -89,14 +90,14 @@ to name itself. Use your own handle in place of `you`.
      <TabItem label="Windows">
 
    ```powershell
-   Copy-Item <install>\assets\workshop\core\mods\balloons\balloon.glb .
+   Copy-Item <install>\assets\workshop\ironlark\core\balloons\balloon.glb .
    ```
 
      </TabItem>
      <TabItem label="Linux">
 
    ```sh
-   cp <install>/assets/workshop/core/mods/balloons/balloon.glb .
+   cp <install>/assets/workshop/ironlark/core/balloons/balloon.glb .
    ```
 
      </TabItem>
@@ -119,8 +120,9 @@ to name itself. Use your own handle in place of `you`.
    scene = "balloon.glb"
    ```
 
-   Your archetype's full id is now `you:balloon/balloon` — the addon namespace, the mod
-   directory, the archetype id.
+   Your archetype's full id is now `you:props:balloon/archetype/balloon` — author, addon,
+   mod, then the kind and the name it declares. You never write that id yourself: inside
+   this mod the archetype is just `balloon`.
 
 4. **Pin the target** — `.cargo/config.toml`
 
@@ -184,7 +186,7 @@ to name itself. Use your own handle in place of `you`.
 
    ```powershell
    New-Item -ItemType Directory -Force wit\deps\ironlark-host
-   Copy-Item <install>\assets\workshop\core\mods\balloons\wit\deps\ironlark-host\host.wit `
+   Copy-Item <install>\assets\workshop\ironlark\core\balloons\wit\deps\ironlark-host\host.wit `
      wit\deps\ironlark-host\
    ```
 
@@ -193,7 +195,7 @@ to name itself. Use your own handle in place of `you`.
 
    ```sh
    mkdir -p wit/deps/ironlark-host
-   cp <install>/assets/workshop/core/mods/balloons/wit/deps/ironlark-host/host.wit \
+   cp <install>/assets/workshop/ironlark/core/balloons/wit/deps/ironlark-host/host.wit \
       wit/deps/ironlark-host/
    ```
 
@@ -235,7 +237,7 @@ impl Guest for Component {
             position: Vec3 { x: 0.0, y: 2.0, z: 5.0 },
             yaw: 0.0,
         };
-        let handle = match spawn("you:balloon/balloon".into(), at).await {
+        let handle = match spawn("balloon".into(), at).await {
             Ok(handle) => handle,
             Err(e) => {
                 log(Level::Error, &format!("balloon: spawn failed: {e}"));
@@ -332,14 +334,14 @@ launcher works too; `--content` is the only reason to use a terminal here.
 In the log you should see, in this order:
 
 ```
-workshop: 2 addon(s) — core, you
-registry: indexed archetype 'you:balloon/balloon' (scene workshop/you/mods/balloon/balloon.glb)
-spawn: spawned registry archetype 'you:balloon/balloon' entity 354v0 at Vec3(0.0, 2.0, 5.0)
+workshop: 3 addon(s) — ironlark:core, ironlark:examples, you:props
+registry: indexed archetype 'you:props:balloon/archetype/balloon' (scene workshop/you/props/balloon/balloon.glb, replication Dynamic)
+spawn: spawned registry archetype 'you:props:balloon/archetype/balloon' entity 354v0 at Vec3(0.0, 2.0, 5.0) for 'you:props:balloon'
 balloon: spawned
 ```
 
 <Aside type="tip">
-You will also see `mod you:balloon has no client half`. That is information, not an
+You will also see `mod you:props:balloon has no client half`. That is information, not an
 error — your mod is server-only, which is what you want.
 </Aside>
 
@@ -426,7 +428,7 @@ full queue drops the call. Counting them drifts. See
 
 | What you see | What it is |
 |---|---|
-| `workshop: 1 addon(s) — core` | the game is not looking at your content root. Pass `--content`. |
+| `workshop: 2 addon(s) — ironlark:core, ironlark:examples` | the game is not looking at your content root. Pass `--content`. |
 | your addon listed, your mod not | `mod.toml` is missing or does not parse. The log names the file. |
 | the mod listed, nothing spawns | the component did not instantiate: a missing export, or a stale `host.wit`. |
 | your old behaviour, after a rebuild | the stale `.wasm` beside `mod.toml` shadows the fresh build. Copy it again. |

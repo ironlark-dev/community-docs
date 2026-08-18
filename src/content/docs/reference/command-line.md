@@ -31,7 +31,7 @@ were given with your access.
 |---|---|---|
 | `-b`, `--become-host` | off | Host the session. |
 | `--connect-to <id>` | none | Join the session hosted by this user id. |
-| `--map <id>` | configured | Map to load, as `namespace:path`. Host only; a joining player loads the host's. |
+| `--map <id>` | configured | Map to load, as `author:addon:mod`. Host only; a joining player loads the host's. |
 | `--gamemode <id>` | configured | Which mod holds the gamemode role. |
 
 With neither `--become-host` nor `--connect-to`, the game opens its own menu.

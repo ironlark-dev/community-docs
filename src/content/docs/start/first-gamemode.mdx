@@ -17,15 +17,16 @@ places them itself.
 ## The files
 
 Under the game's content root — `assets/workshop/` beside the install — you are creating a
-namespace, an addon marker, and a mod directory. Your mod will be `tutorial:hellomode`:
-**identity comes from the path**, never from a manifest, so nothing below repeats the name.
+author segment, an addon, and a mod directory. Your mod will be `tutorial:hello:hellomode` —
+author, addon, mod, one part per level: **identity comes from the path**, never from a
+manifest, so nothing below repeats the name.
 
 <FileTree>
 - workshop
-  - tutorial your namespace
-    - addon.toml marks this an addon root
-    - mods
-      - **hellomode** the mod — this name IS its identity
+  - tutorial your author segment
+    - hello an addon
+      - addon.toml marks this an addon root
+      - **hellomode** the mod — these three names ARE its identity
         - mod.toml
         - Cargo.toml
         - .cargo/config.toml
@@ -96,7 +97,7 @@ namespace, an addon marker, and a mod directory. Your mod will be `tutorial:hell
 5. **Name your WIT package** — `wit/world.wit`
 
    ```wit
-   package ironlark:hellomode@0.1.0;
+   package tutorial:hellomode@0.1.0;
    ```
 
 6. **Vendor the host contract** — `wit/deps/ironlark-host/host.wit`
@@ -170,7 +171,7 @@ impl Guest for Component {
         };
 
         // Two steps, always: an entity exists, then someone drives it.
-        let body = match spawn("core:character".into(), at).await {
+        let body = match spawn("character".into(), at).await {
             Ok(body) => body,
             Err(e) => {
                 log(Level::Error, &format!("hellomode: spawn failed: {e}"));
@@ -242,28 +243,34 @@ turning hyphens into underscores — so a directory called `hello-gamemode` prod
 `hello_gamemode_server.wasm` while the host looks for `hello-gamemode_server.wasm`, and never
 finds it.
 
-The failure is quiet and misleading. The mod is still discovered, it can still be designated
-the gamemode, and the only clue is one `INFO` line:
+The host says so plainly, as an `ERROR` naming the path it wanted and the command that
+builds it:
 
 ```
-mod tutorial:hello-gamemode has no server half (…/hello-gamemode_server.wasm)
+mod tutorial:hello:hello-gamemode has a server realm that is not built: no component at
+  .../hello-gamemode/target/wasm32-wasip2/release/hello-gamemode_server.wasm. Build it
+  with: cargo build --release --target wasm32-wasip2 --manifest-path
+  .../hello-gamemode/Cargo.toml
 ```
 
-Worse: the gamemode you *did* name is now loaded-as-nothing, and the gamemode you did not
-name was dropped for not being chosen — so nobody spawns at all. Keep mod directory names
-free of hyphens.
+Running that command will not help, because cargo will write the underscored name again.
+The fix is the directory: keep mod directory names free of hyphens.
+
+The consequence is worth knowing anyway. The mod is still discovered and can still be
+designated the gamemode, so the gamemode you named is loaded as nothing while the one you
+did not name was dropped for not being chosen — and nobody spawns at all.
 :::
 
 ## Run it
 
-Your gamemode and the bundled `core:freeroam` are now both candidates, so the session refuses
+Your gamemode and the bundled `ironlark:core:freeroam` are now both candidates, so the session refuses
 to start until you name one — that refusal is the resolver working, not a bug:
 
 Name yours in `config/server.toml` beside the game:
 
 ```toml
 [session]
-gamemode = "tutorial:hellomode"
+gamemode = "tutorial:hello:hellomode"
 ```
 
 Then host a session from the launcher as usual. The addon has to be in the content root the
@@ -275,13 +282,14 @@ first step.
 In `logs/host.log`:
 
 ```
-workshop: 7 mod(s) — … tutorial:hellomode 0.1.0
-gamemode: tutorial:hellomode
+workshop: 8 mod(s) — … tutorial:hello:hellomode 0.1.0
+gamemode: tutorial:hello:hellomode
 hellomode: init, we own spawn now
-gamemode: set default-spawn = false
-server-mod loaded: tutorial:hellomode
-spawn: spawned 'core:character' body 354v0 at Vec3(0.0, 5.0, 12.0) (uncontrolled)
-hellomode: spawned and controlled a body for af74f667-…
+gamemode: 'tutorial:hello:hellomode' set default-spawn = false
+server-mod loaded: tutorial:hello:hellomode
+spawn: spawned 'character' body 358v0 at Vec3(0.0, 5.0, 12.0) for 'tutorial:hello:hellomode' (uncontrolled)
+control: 'tutorial:hello:hellomode' bound local player to body 358v0
+hellomode: spawned and controlled a body for af74f667-...
 ```
 
 The body is announced `uncontrolled` and becomes controlled a line later — that is the two

@@ -49,7 +49,7 @@ It is also why players do not connect to an address. They connect to **you**.
    From the launcher: pick **Host**, choose a map, and launch. That is the whole step —
    the launcher knows which servers to talk to and signs you in.
 
-   The map is a content id, `namespace:path`. `core:badgrass` ships with the game.
+   The map is a content id, `author:addon:mod`. `ironlark:core:badgrass` ships with the game.
    Leave it unset and the session takes whatever the configuration selects, or the
    default.
 
@@ -112,7 +112,7 @@ invocation looks for a backend on your own machine and does not find one.
 
 ```powershell
 .\ironlark-game.exe -c <core server> -i <sign-in server> -s <signalling websocket> `
-  --become-host --map core:badgrass
+  --become-host --map ironlark:core:badgrass
 ```
 
   </TabItem>
@@ -120,7 +120,7 @@ invocation looks for a backend on your own machine and does not find one.
 
 ```sh
 ./ironlark-game -c <core server> -i <sign-in server> -s <signalling websocket> \
-  --become-host --map core:badgrass
+  --become-host --map ironlark:core:badgrass
 ```
 
   </TabItem>
@@ -138,8 +138,8 @@ beside the install:
 ```toml
 [session]
 addons = ["core", "ironlark:examples"]
-gamemode = "core:freeroam"
-map = "core:badgrass"
+gamemode = "ironlark:core:freeroam"
+map = "ironlark:core:badgrass"
 ```
 
 Three things worth knowing now:
