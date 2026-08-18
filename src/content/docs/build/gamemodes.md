@@ -35,18 +35,18 @@ which to pick. The engine deliberately has no default: a default spelled into th
 be the host knowing about a specific piece of gameplay.
 
 :::caution[This will bite you immediately]
-The moment you add your own gamemode alongside the bundled `core:freeroam`, there are two
+The moment you add your own gamemode alongside the bundled `ironlark:core:freeroam`, there are two
 candidates. Every launch then refuses until you name one:
 
 ```
---gamemode ironlark:examples/mygamemode
+--gamemode you:mypack:mygamemode
 ```
 
 or in `config/server.toml`:
 
 ```toml
 [session]
-gamemode = "ironlark:examples/mygamemode"
+gamemode = "you:mypack:mygamemode"
 ```
 
 The refusal is the resolver working correctly. It is not your mod failing to load.
@@ -66,7 +66,7 @@ async fn init() {
 async fn on_player_join(player_id: String) {
     let spawns = map_api::list_spawns().await;      // never empty
     let at = pick(&spawns);
-    let body = entity::spawn("core:character", at).await?;
+    let body = entity::spawn("character", at).await?;
     entity::control(&player_id, &body).await?;
 }
 ```

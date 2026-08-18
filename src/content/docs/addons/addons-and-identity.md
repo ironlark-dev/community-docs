@@ -1,18 +1,16 @@
 ---
 kind: explanation
 area: addons
-state: changing
 title: "Addons and identity"
 description: "Where content lives, and why a name is something the installer grants rather than something a manifest claims."
 sidebar:
   order: 8
 ---
 
-Everything below works today. The part that will move is the **shape of a published
-name**: once addons can be packaged and distributed, an author segment joins the
-namespace, so treat a name you publish now as not yet final. How identity is derived —
-from the install path, never from a manifest — is settled and is not changing. See
-[the roadmap](/roadmap/).
+Every name on this page is what the engine uses today. What is still ahead is
+**publishing**: an author handle becomes platform-assigned and signature-backed, so a
+name you pick locally is honest about where the files sit and says nothing yet about
+who shipped them. See [the roadmap](/roadmap/).
 
 ## Addon and mod are different things
 
@@ -24,32 +22,56 @@ none: a pack of maps is a perfectly good addon with no code in it at all.
 
 ```text
 workshop/
-  core/                          # a namespace that is itself one addon
-    addon.toml
-    maps/<map>/
-    mods/<mod>/
-  ironlark/                      # an author's namespace, holding many addons
+  ironlark/                        # an author
+    core/                          # an addon
+      addon.toml
+      badgrass/                    # a mod filling the map role
+      freeroam/                    # a mod filling the gamemode role
     examples/
       addon.toml
-      mods/echo/
+      echo/
+  you/
+    doors/
+      addon.toml
+      oak/
 ```
 
-`addon.toml` is what marks an addon root, and that is what makes the depth **data** rather
-than a special case: a namespace that is one addon and a namespace holding several are the
-same rule applied twice. Nothing in the loader special-cases a name.
+Three levels, always: author, addon, mod. `addon.toml` marks the addon root. There is no
+`mods/` or `maps/` directory — a map is a mod that fills the map role, so a new kind of
+content is a role rather than another directory, and placement cannot forge what a piece
+of content is.
 
-It is also what lets two authors ship an addon with the same name — impossible in a flat tree
-however the ids were written, because both would want one directory.
+Three levels is also what lets two authors ship an addon of the same name, which a flat
+tree could not express however the ids were written: both would want one directory.
 
 ## Identity is the install path
 
-An item is `<namespace>:<path>`:
+An id has one part per level, separated by `:`.
 
 ```text
-core:badgrass                    a map in the core addon
-ironlark:examples/echo           a mod in the examples addon
-core:balloons/balloon            an archetype published by core's balloons mod
+ironlark                          an author
+ironlark:core                     an addon
+ironlark:core:balloons            a mod
+you:doors:oak                     your own mod
 ```
+
+Past the mod, `/` steps down into what that mod declares — the **kind**, then the name:
+
+```text
+ironlark:core:balloons/archetype/balloon      an archetype
+ironlark:core:buttons/channel/pressed         a signal channel
+ironlark:core:plates/entity/plate:main        one entity in the world
+```
+
+The kinds are `archetype`, `channel`, `method`, `action`, `feature` and `entity`. Every
+one but `entity` is declared in `mod.toml` and checked when it is used, so a typo fails at
+load rather than going quiet. `entity` is the exception both ways: it is never declared,
+because a map's props are stamped at runtime in numbers no manifest could list, and it is
+the only kind that takes an **instance** — the `:main` above, separating one member from
+the family name it instantiates.
+
+Names are lowercase `a-z`, digits and `-`. An uppercase letter is rejected rather than
+folded, so one name cannot arrive by two spellings.
 
 **A manifest never declares its own name.** It cannot: a name a mod writes about itself could
 claim any namespace, and that name is the key to the load table, the signal `source`, the
@@ -59,31 +81,40 @@ fact the content cannot forge, so the path is what the host trusts.
 The practical consequence when authoring: **rename a directory and you have renamed the
 content.** Channels, archetype refs and saved references are strings that will not follow it.
 
-## A composed id cannot be taken apart
+## Why the depth is fixed
 
-Depth is contextual, so nothing inside `core:balloons/balloon/alice-1` marks where the owning
-mod ends and its own naming begins. Anything that needs both halves carries them as separate
-values rather than splitting a string — which is why the wire format for a session's content
-sends an addon and its mods as separate fields rather than joined ids.
+Three levels for a mod is a safety property, not a style choice. Equal depth means no
+mod's id can be a prefix of another's, so `find` and the entity index cannot reach across
+mods by accident or on purpose. Variable depth is what would allow it.
+
+It also means a composed id is not worth taking apart. Anything needing both halves
+carries them as separate values rather than splitting a string, which is why the wire
+format for a session's content sends an addon and its mods as separate fields rather than
+joined ids.
 
 Do not write a parser for these. Compare them.
 
-## `core` and `ironlark`
+## The baseline, and optional first-party content
 
-`core` is a reserved namespace, not an author: the mandatory engine baseline — the character
-body, the default gamemode, the default map. It ships with the engine, is always enabled, and
-cannot be removed or disabled, so every install boots something playable with no downloads and
-no config.
+`ironlark:core` is the engine baseline: the character body, the default gamemode, the
+default map. It ships with the engine, is always enabled, and cannot be removed or
+disabled, so every install boots something playable with no downloads and no config.
 
-`ironlark` is an ordinary author handle that the platform's *optional* first-party content uses
-(`ironlark:examples`). Bundled for convenience, removable, and never enabled by default — a
-server opts into it exactly as it would for third-party content.
+`ironlark`'s other addons are ordinary optional content — `ironlark:examples` is bundled
+for convenience, removable, and never enabled by default. A server opts into it exactly as
+it would for anyone else's.
 
-Which means `ironlark:chat` and `ullanar:chat` can coexist, and swapping one implementation for
-another is a config change.
+Which is why `ironlark:chat` and `ullanar:chat` can coexist, and swapping one
+implementation for another is a config change.
+
+## Names the host publishes
+
+A few names belong to the engine rather than to any addon, and they carry **no colon at
+all** — `character`, the built-in body, is the one you will meet. That is what keeps them
+from ever colliding with content: every content id has at least two colons, so no addon
+can claim a host name and no host name can shadow an addon's.
 
 ## Your own namespace
 
-While developing locally, pick a namespace and stay in it — `tutorial/`, your handle, whatever.
-Author handles become platform-assigned and signature-backed when publishing exists; until
-then the namespace is honest about *placement* and says nothing about provenance.
+While developing locally, pick an author segment and stay in it — your handle, or
+`tutorial`, whatever. It is honest about *placement*; provenance arrives with publishing.

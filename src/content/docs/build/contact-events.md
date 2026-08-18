@@ -61,23 +61,22 @@ Only **edges** cross the boundary — the moment a touch starts and the moment i
 per-frame stream. "While standing in the zone" is the interval between the two, which you
 track yourself.
 
-:::caution[You must identify an instance to hear about it]
-Events route to the owning mod through the id you gave the instance. An instance you spawned
-but never `identify`-ed produces no events, and the host says so:
+:::tip[Events follow the archetype, not the name]
+Touches go to the addon that **declared the archetype** — the one that wrote `contact = true`
+and this handler — whoever spawned the instance. So an instance you never named still
+produces events, and instances another addon places from your archetype reach you too.
 
-```
-interactable instance has no id — its mod never identified it
-```
-
-So: `spawn`, then `identify`, then you get touches.
+`target` is your own name for the instance when you gave it one, and otherwise the bare
+archetype name. Naming is still worth it: it is how you tell two instances apart, and how
+`find` reaches them again later.
 :::
 
 ## A zone, end to end
 
 ```rust
 async fn init() {
-    let zone = spawn("tutorial:mymode/zone", at).await?;
-    identify(&zone, "zone/hill").await?;      // required, or no events
+    let zone = spawn("zone", at).await?;
+    identify(&zone, "zone/hill").await?;      // so `target` names this one
 }
 
 async fn on_contact(target: String, other: ContactParty, _p: Vec3, edge: ContactEdge) {

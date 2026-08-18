@@ -12,12 +12,13 @@ are host-owned content; they run no code.
 ## Anatomy
 
 ```text
-workshop/<namespace>[/<addon>]/maps/<map>/
+workshop/<author>/<addon>/<map>/
   map.toml        # manifest: id, environment, spawn points
   <map>.glb       # geometry, materials, lights (glTF, from Blender)
 ```
 
-A map is addressed `addon:map` (for example `core:badgrass`).
+A map is addressed `author:addon:mod` (for example `ironlark:core:badgrass`) — a map is a
+mod that fills the map role, so it is named like any other.
 
 ## The manifest (`map.toml`)
 

@@ -1,0 +1,133 @@
+---
+kind: how-to
+area: server
+title: "Granting authority over other addons' entities"
+description: "Addons own what they create. A grant is how a cleanup or moderation addon reaches what it did not create."
+sidebar:
+  label: "Grants"
+  order: 40
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+An addon can act on the entities it created, and on instances of archetypes it ships.
+It cannot touch another addon's entities. That default is what stops a decoration
+addon from moving your players around, and it needs no configuration from you.
+
+Some addons legitimately need more: a round janitor that clears props at the end of a
+match, or a moderation tool that removes one griefer's prop. Those act on entities
+whose creators have never heard of them, so no addon can arrange it between
+themselves — you decide it, in `config/server.toml`.
+
+If you run none of those, you never touch this page.
+
+## A grant
+
+```toml
+[[grants.rule]]
+to    = "acme:janitor:props"
+verbs = ["read", "remove"]
+over  = "owner:*"
+```
+
+That addon may now look at and remove any entity any addon created, for this session.
+
+Three fields, and all three are required:
+
+| Field | Means |
+|---|---|
+| `to` | The mod this is granted to, written in full: author, addon, mod. |
+| `verbs` | What it may do: any of `read`, `write`, `remove`. |
+| `over` | Whose entities: `owner:*` for every addon's, or `owner:<author>:<addon>:<mod>` for one addon's. |
+
+`to` names a **mod**, not an addon. Authority is exercised by running code, and an
+addon-wide grant would hand every mod inside it whatever one of them needed.
+
+## The three verbs
+
+| Verb | Lets the addon |
+|---|---|
+| `read` | Look at another addon's entities — read their components, resolve their parts. |
+| `write` | Change them: move them, recolour them. |
+| `remove` | Delete them. |
+
+They are separate because the addons that need them need different ones. A janitor
+needs `remove` and nothing else. Grant the narrowest set that makes the addon work.
+
+<Aside type="caution" title="read and remove are not interchangeable">
+A cleanup addon granted only `read` will find every prop and delete none of them,
+and it may not say so clearly. If a janitor appears to do nothing, check that its
+row lists `remove`.
+</Aside>
+
+## Narrowing it
+
+`owner:*` covers every addon's entities. To confine a grant to one addon's, name it:
+
+```toml
+[[grants.rule]]
+to    = "acme:janitor:props"
+verbs = ["remove"]
+over  = "owner:you:props:place"
+```
+
+There is no exclusion list — no way to say "everything except". One row's effect would
+then depend on rows elsewhere in the file, and any addon installed later would fall
+outside everybody's exclusions and be quietly reachable. Listing the addons you mean
+is more typing and says what it does.
+
+## What a grant can never do
+
+- **Reach a player's body.** No grant moves, reads or deletes one, whatever it says.
+  The widest row you can write does not touch players.
+- **Take a player over.** Possession belongs to the session's gamemode alone; there is
+  no setting for it.
+- **Rename another addon's entities**, or reach map geometry and the bodies the server
+  places itself, which belong to nobody.
+
+## The gamemode already has one
+
+The mod holding the gamemode role may read and remove any addon's entities without a
+row, because clearing the field at the end of a round is the session's own business.
+It is never granted `write`, so it can clear another addon's props but not silently
+rewrite them.
+
+Swapping which mod is the gamemode moves that authority with it, so there is nothing
+to keep in step.
+
+## Checking it
+
+The server states the policy it resolved at start. In `logs/host.log`:
+
+```
+grant: 'acme:janitor:props' may read,remove over owner:* (from row 1)
+grant: 'ironlark:core:freeroam' may read,remove over owner:* (from the gamemode role)
+grant: no grant reaches a player's body, and possession is the gamemode's alone
+```
+
+With no `[grants]` section at all:
+
+```
+grants: none; no mod may touch another mod's entities
+```
+
+Every refused call is logged too, naming who asked, whose entity it was, and what was
+missing — so an addon that swallows its own errors cannot hide the problem from you.
+
+## When it goes wrong
+
+| What you see | Cause |
+|---|---|
+| The session refuses to start, naming a row | That row is malformed — usually `over`. The message states the forms it accepts. |
+| `row N names '<mod>', which this session does not run` | The row is ignored. Either the addon is not enabled, or the id is wrong — check it against the log's list of loaded mods. |
+| An addon reports refusals you expected the grant to cover | Compare the verb in the refusal against the row's `verbs`, and the owner against `over`. |
+
+A malformed row stops the session on purpose. Starting with a policy you did not write
+is worse than not starting: a janitor you believe is running and is not gets noticed a
+week later, by which time the map is full.
+
+## Changing it
+
+Grants resolve when a session starts, so edit the file and host again. They do not
+change mid-session — an addon that lost `remove` halfway through a sweep would leave
+the field half cleared.

@@ -32,8 +32,9 @@ whitelist. See [Components](/build/components/).
 
 ## Content id
 
-How anything installed is addressed: `namespace:path`, as in `core:badgrass` or
-`you:doors/oak`. The namespace is the addon's, and it comes from the install path.
+How anything installed is addressed: `author:addon:mod`, as in `ironlark:core:badgrass`
+or `you:doors:oak`. Past the mod, `/` steps down into what it declares —
+`you:doors:oak/archetype/door`. Every part comes from the install path.
 
 ## Entity
 
@@ -45,6 +46,12 @@ Everything in the world is one. Mods create, find and change entities; see
 An ordinary mod that the server designates as the session's baseline rule layer.
 Exactly one runs per session, and the engine has no gamemode concept beyond that one
 slot — see [Gamemodes](/build/gamemodes/).
+
+## Grant
+
+A server owner's line in `config/server.toml` letting one mod act on entities another
+mod created. Cleanup and moderation addons need one; nothing else does, and no grant
+reaches a player's body — see [Grants](/server/grants/).
 
 ## Host
 
@@ -71,6 +78,12 @@ both — see [Realms and the session lifecycle](/build/realms-and-lifecycle/).
 What other players see you called. It belongs to your account, and the server states
 it — you never type it in when joining, and nobody can arrive claiming to be someone
 else.
+
+## Owner
+
+The mod that spawned an entity. It is recorded by the host, not claimed by the mod, and
+it is what every verb checks before touching that entity — see
+[who may act on an entity](/build/entity-ownership/).
 
 ## Realm
 
