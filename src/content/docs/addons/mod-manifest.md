@@ -20,12 +20,18 @@ methods = ["buy"]
 actions = ["echo"]
 
 [[declares.archetype]]
-id = "zone"
-scene = "zone.glb"
+id = "pedestal"
+scene = "pedestal.glb"
 replication = "static"
-interact = false
-contact = false
-solid = true
+interact = true
+
+[[declares.archetype]]
+id = "zone"
+shape = { kind = "box", size = [4.0, 3.0, 4.0] }
+visible = false
+replication = "static"
+contact = true
+solid = false
 ```
 
 ## `[mod]`
@@ -75,14 +81,46 @@ runs into an error naming the manifest to check.
 One block per entity recipe this mod declares. See [Archetypes](/addons/archetypes/) for what
 each does in practice.
 
+An archetype's content is **exactly one** of `scene` and `shape`; declaring both, or
+neither, fails the manifest.
+
 | Key | Required | Default | Meaning |
 |---|---|---|---|
 | `id` | **yes** | — | Name within this mod. Your own code spawns it by this bare name; another mod spawns it as `<author>:<addon>:<mod>/archetype/<id>`. |
-| `scene` | **yes** | — | glTF/`.glb` file beside `mod.toml`. |
+| `scene` | one of | — | glTF/`.glb` file beside `mod.toml`. |
+| `shape` | one of | — | A host-built primitive; see the table below. |
+| `visible` | no | `true` | Shapes only: `false` keeps the collision and the touch events but renders nothing. Rejected beside a `scene`. |
+| `material` | no | neutral grey | Shapes only: `{ color = "#rrggbb" }` or `"#rrggbbaa"`, hex only. Rejected beside a `scene` — a model carries its own. |
 | `replication` | no | `dynamic` | `static`, `dynamic` or `high-frequency`. |
 | `interact` | no | `false` | Use-presses on instances call `on-interact`. |
 | `contact` | no | `false` | Touches on instances call `on-contact`. |
 | `solid` | no | `true` | `false` makes it a pass-through trigger volume. |
+
+### `shape`
+
+One inline table naming a `kind` and its dimensions. The set is closed; an unknown kind or
+a typoed dimension key fails the manifest naming every valid spelling.
+
+| Kind | Dimensions | Example |
+|---|---|---|
+| `box` | `size = [x, y, z]` | `shape = { kind = "box", size = [4.0, 3.0, 4.0] }` |
+| `sphere` | `radius` | `shape = { kind = "sphere", radius = 0.7 }` |
+| `capsule` | `radius`, `length` | `shape = { kind = "capsule", radius = 0.4, length = 1.1 }` |
+| `cylinder` | `radius`, `height` | `shape = { kind = "cylinder", radius = 0.5, height = 1.3 }` |
+
+Every length is a **full extent** in meters, and every dimension must be a positive finite
+number. `capsule.length` is the cylindrical segment only — the total height is
+`length + 2 * radius`. Unity and Godot define capsule height as the total, so a capsule
+copied from either comes out taller here unless you subtract the two hemispheres.
+
+The same numbers build the visual mesh and the collider, so what you see is exactly what
+collides. A shape has no named nodes, so parts do not apply — see
+[Archetypes](/addons/archetypes/).
+
+A `material` colour with alpha below `ff` renders the shape translucent and double-sided,
+so a player inside the volume still sees it. `visible = false` with the default
+`solid = true` is an invisible wall: legal, and it blocks movement and aim like any other
+obstacle.
 
 ## What is not in here
 

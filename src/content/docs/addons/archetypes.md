@@ -8,8 +8,9 @@ sidebar:
   order: 32
 ---
 
-An **archetype** is a named recipe for an entity: a scene to instantiate, plus how it behaves
-on the wire and under touch. Mods publish archetypes; `entity.spawn` instantiates them.
+An **archetype** is a named recipe for an entity: a scene to instantiate — or a primitive
+shape the host builds — plus how it behaves on the wire and under touch. Mods publish
+archetypes; `entity.spawn` instantiates them.
 
 ## Declaring one
 
@@ -78,6 +79,40 @@ Two authoring rules worth knowing before you export:
   collider generator then rejects it.
 - **The named node you want to address should be the scene root.** Unnamed wrapper nodes are
   given generated names on import, which makes them opaque to part paths.
+
+## Shapes
+
+An archetype that is a box, a sphere, a capsule or a cylinder needs no model file:
+
+```toml
+[[declares.archetype]]
+id = "zone"
+shape = { kind = "box", size = [4.0, 3.0, 4.0] }
+visible = false
+replication = "static"
+contact = true
+solid = false
+```
+
+The host builds the mesh and the collider from the same numbers, so the visual and the
+collision cannot disagree. Dimensions are full extents in meters; the exact spellings per
+kind are in [`mod.toml`](/addons/mod-manifest/).
+
+Shapes are how you make a real **volume**. The collider is solid, not a shell: a player
+standing fully inside a shape zone keeps one open touch — `on-contact` fires `started` once
+on entry and `ended` once on true exit, however long they stay. A `contact` zone that is not
+`interact` is also transparent to use-presses and raycasts, so an invisible zone enclosing a
+button does not swallow the press.
+
+Three things a scene has that a shape does not:
+
+- **Parts.** A shape has no named children; `entity.part` resolves only the empty path — the
+  root. Every part-addressing example on this site assumes a scene.
+- **Authored materials.** A shape has one flat colour: `material = { color = "#26bfe6" }`,
+  hex only, alpha optional. Leave it out for neutral grey.
+- **A silhouette when hidden.** `visible = false` renders nothing while the collision stays;
+  with the default `solid = true` that is an invisible wall, so pass-through zones almost
+  always want `solid = false` too.
 
 ## The registry
 
