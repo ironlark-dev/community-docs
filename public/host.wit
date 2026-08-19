@@ -31,6 +31,16 @@ interface ui {
   set-overlay-text: func(text: string);
 }
 
+// The session roster (ADR 0040): the server-resolved facts about a
+// participant, as named string values. Read-only — the host owns the table,
+// fills it on join and drops the row on leave; mods never hold a copy.
+interface profile {
+  // Every value for one player, today exactly the display name under "name".
+  // An unknown player is an empty list. Names are not unique and are never
+  // an identity: address players by their id, show them by their name.
+  get-all: async func(player-id: string) -> list<tuple<string, string>>;
+}
+
 // Server-realm entity verbs (ADR 0020/0021/0022). A body is just an entity a
 // controller drives; creation and control are separate. The verb set is fixed
 // and generic: capability grows by whitelisting components (data), never by
@@ -392,6 +402,7 @@ world server-mod {
   import entity;
   import gamemode;
   import map-api;
+  import profile;
   import signal;
   import spatial;
   export server-api;
@@ -400,6 +411,7 @@ world server-mod {
 world client-mod {
   import log;
   import ui;
+  import profile;
   import rpc-out;
   export client-api;
 }
