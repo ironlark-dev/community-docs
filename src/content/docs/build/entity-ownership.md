@@ -97,6 +97,25 @@ touched you.
 An event lets you **affect** a player, not keep them. It does not let you name their body,
 destroy it, or take it over.
 
+## Decorating players, by declaring it
+
+One class of body write needs no event: **decoration rows** — today exactly `label`. Declare
+the row in your manifest and you may write it on any player's body, whenever, first write
+included:
+
+```toml
+[declares]
+body-rows = ["label"]
+```
+
+That is the whole ceremony — enabling your addon is the permission, and the server states
+the declaration in its session-start log. Decoration is a statement observers see about a
+player, never a channel out of them or a hand on them: pose, reads, possession and despawn
+stay exactly as narrow as above, whatever you declare. One row has one holder per session —
+if two enabled addons declare the same row, the earlier one in the server's addon list
+holds it and the later declaration is refused aloud. See
+[Nameplates](/build/body-decoration/) for the worked example.
+
 ## Removing is narrower than writing
 
 Only the mod that **spawned** an entity may destroy it. An archetype's author may drive an

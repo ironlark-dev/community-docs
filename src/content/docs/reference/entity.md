@@ -86,7 +86,8 @@ entity no longer exists.
 Only the mod that **spawned** an entity may destroy it — narrower than the other
 verbs, because declaring an archetype lets you drive an instance while the
 instance exists because someone else asked for it. A server owner can grant this
-across mods for a janitor or a moderation tool; nothing reaches a player's body.
+across mods for a janitor or a moderation tool; no despawn reaches a player's
+body, whatever is granted or declared.
 A refused despawn spends the handle too, since the verb takes it owned whether or
 not the host obeys: `find` it again to address the entity.
 
@@ -98,16 +99,28 @@ set-component: async func(entity: borrow<handle>, component: string, fields: lis
 
 Write fields into one registered component on an entity. `component` is the
 component's registered name (e.g. "transform"); each field patches one path
-within it. Only whitelisted components are writable. Errors on a forbidden or
+within it. Only whitelisted components are writable. An insertable row
+(e.g. "label") is attached by its first write: the host builds the row's
+registered defaults, applies your fields over them, and inserts the result
+whole — one call, no declaration, no attach verb. A row that is not insertable
+keeps erroring when the entity lacks the component. Errors on a forbidden or
 unknown component, an unknown field path, a value-shape mismatch, or a missing
 entity. This single verb stands in for per-property setters: new settable
 components and fields arrive by registration, never by new verbs.
 
 You may write an entity you spawned, and an instance of an archetype you declare
 wherever it came from. A player's body only while you are handling an event about
-that player — the touch or press that reached you. Outside that handler the same
-call is refused, so keeping a player id does not keep the player. Anything else
-needs a server owner's grant.
+that player — the touch or press that reached you — or, for decoration rows
+alone, after declaring the row under `body-rows` in your manifest: a declared
+row (e.g. "label") is writable on any player's body, first write included, while
+pose, reads and despawn stay out of reach. Anything else needs a server owner's
+grant — and a grant writes the components an entity carries, never attaches one.
+
+A writer-scoped row (e.g. "label") also answers to the mod that wrote it: while
+its value is off the row's defaults, only that mod may change it. Anyone with
+write reach may still reset it to the defaults, which also releases it — writing
+the defaults back is the release; there is no release verb. Per-row properties
+and defaults are on the [component rows](/reference/components/) page.
 
 ### `get-component`
 
@@ -263,6 +276,13 @@ The value written into a component field: a closed vocabulary of primitive
 shapes the host knows how to apply. Adding a settable *component* is data (a
 registration), not a WIT change; extending this *shape* vocabulary is the rare
 exception that does touch the WIT.
+
+Values are checked before anything applies, on every route: numbers, vectors,
+quaternions and color channels must be finite; text is capped at 256 bytes
+(refused whole, never truncated), may not contain control characters, and —
+when non-empty — must put at least one visible character on screen. A field may
+appear once per call. A write restating the value a field already holds is
+dropped: it changes nothing and replicates nothing.
 
 ### `component-field`
 

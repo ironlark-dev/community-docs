@@ -51,12 +51,20 @@ slot — see [Gamemodes](/build/gamemodes/).
 
 A server owner's line in `config/server.toml` letting one mod act on entities another
 mod created. Cleanup and moderation addons need one; nothing else does, and no grant
-reaches a player's body — see [Grants](/server/grants/).
+reaches a player's body — decorating players is a manifest declaration, not a grant.
+See [Grants](/server/grants/).
 
 ## Host
 
 The player running the session. Everything authoritative happens there, and today it
 is a player rather than a dedicated machine — see [Run a server](/start/run-a-server/).
+
+## Label
+
+A mod-written annotation on an entity: one line of text that answers for the thing it
+is attached to. It states a fact about the entity; how it renders is the host's, so
+there is no 2D or 3D variant. Text that is an entity's own content — a sign's face, a
+screen — is not a label. See [Component rows](/reference/components/).
 
 ## Listen server
 

@@ -18,6 +18,7 @@ roles = ["gamemode"]
 channels = ["opened"]
 methods = ["buy"]
 actions = ["echo"]
+body-rows = ["label"]
 
 [[declares.archetype]]
 id = "pedestal"
@@ -65,6 +66,7 @@ ignored typo is a declaration that never applied with nothing saying so.
 | `channels` | Signal channels this mod owns. `emit` and `subscribe` accept a bare name only if it is listed here; anyone may emit on a channel you own. |
 | `methods` | RPC methods this mod answers. A `call` goes to the mod that declared the method and to no other. |
 | `actions` | Host input actions this mod answers in `on-input`. These are the host's names, not yours, so a name the host does not publish fails at session start. |
+| `body-rows` | Decoration rows this mod writes on player bodies — today exactly `label`. Declaring one is the whole permission: enabling the addon appoints it, and the server states the declaration at session start. A row the host does not classify as decoration fails the manifest. One row has one holder per session — first in the server's addon order. See [Decorating players](/build/body-decoration/). |
 | `archetype` | Repeated `[[declares.archetype]]` blocks; see below. |
 
 Every name here is `[a-z0-9][a-z0-9-]*` — lowercase ASCII, digits and hyphens.
