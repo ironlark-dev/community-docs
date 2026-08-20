@@ -51,7 +51,8 @@ slot — see [Gamemodes](/build/gamemodes/).
 
 A server owner's line in `config/server.toml` letting one mod act on entities another
 mod created. Cleanup and moderation addons need one; nothing else does, and no grant
-reaches a player's body — see [Grants](/server/grants/).
+reaches a player's body — decorating players is a manifest declaration, not a grant.
+See [Grants](/server/grants/).
 
 ## Host
 

@@ -86,7 +86,8 @@ entity no longer exists.
 Only the mod that **spawned** an entity may destroy it — narrower than the other
 verbs, because declaring an archetype lets you drive an instance while the
 instance exists because someone else asked for it. A server owner can grant this
-across mods for a janitor or a moderation tool; nothing reaches a player's body.
+across mods for a janitor or a moderation tool; no despawn reaches a player's
+body, whatever is granted or declared.
 A refused despawn spends the handle too, since the verb takes it owned whether or
 not the host obeys: `find` it again to address the entity.
 
@@ -109,10 +110,11 @@ components and fields arrive by registration, never by new verbs.
 
 You may write an entity you spawned, and an instance of an archetype you declare
 wherever it came from. A player's body only while you are handling an event about
-that player — the touch or press that reached you. Outside that handler the same
-call is refused, so keeping a player id does not keep the player. Anything else
-needs a server owner's grant — and a grant writes the components an entity
-carries, never attaches one.
+that player — the touch or press that reached you — or, for decoration rows
+alone, after declaring the row under `body-rows` in your manifest: a declared
+row (e.g. "label") is writable on any player's body, first write included, while
+pose, reads and despawn stay out of reach. Anything else needs a server owner's
+grant — and a grant writes the components an entity carries, never attaches one.
 
 A writer-scoped row (e.g. "label") also answers to the mod that wrote it: while
 its value is off the row's defaults, only that mod may change it. Anyone with

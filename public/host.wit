@@ -146,9 +146,11 @@ interface entity {
   //
   // You may write an entity you spawned, and an instance of an archetype you
   // declare wherever it came from. A player's body only while you are handling an
-  // event about that player — the touch or press that reached you (ADR 0038).
-  // Outside that handler the same call is refused, so keeping a player id does
-  // not keep the player. Anything else needs an operator's grant — and a grant
+  // event about that player — the touch or press that reached you (ADR 0038) —
+  // or, for decoration rows alone, after declaring the row under `body-rows` in
+  // your manifest (ADR 0044): a declared row (e.g. "label") is writable on any
+  // player's body, first write included, while pose, reads and despawn stay
+  // out of reach. Anything else needs an operator's grant — and a grant
   // writes the components an entity carries, never attaches one.
   //
   // A writer-scoped row (e.g. "label") also answers to the mod that wrote it:

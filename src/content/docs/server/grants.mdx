@@ -79,7 +79,10 @@ is more typing and says what it does.
 ## What a grant can never do
 
 - **Reach a player's body.** No grant moves, reads or deletes one, whatever it says.
-  The widest row you can write does not touch players.
+  The widest row you can write does not touch players. The one thing a body takes —
+  decoration rows such as `label` — is not a grant at all: the addon declares the row
+  in its own manifest, and enabling the addon is the permission. See
+  [Decorating players](/build/body-decoration/).
 - **Take a player over.** Possession belongs to the session's gamemode alone; there is
   no setting for it.
 - **Rename another addon's entities**, or reach map geometry and the bodies the server
@@ -102,7 +105,7 @@ The server states the policy it resolved at start. In `logs/host.log`:
 ```
 grant: 'acme:janitor:props' may read,remove over owner:* (from row 1)
 grant: 'ironlark:core:freeroam' may read,remove over owner:* (from the gamemode role)
-grant: no grant reaches a player's body, and possession is the gamemode's alone
+grant: no grant moves, reads, names or destroys a player's body — a body takes only declared decoration rows, and possession is the gamemode's alone
 ```
 
 With no `[grants]` section at all:

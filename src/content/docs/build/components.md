@@ -28,7 +28,7 @@ registered:**
 |---|---|---|
 | `transform` | `translation` (vec3), `rotation` (quat), `scale` (vec3) | physics-aware, see below |
 | `material` | `base_color` (rgba) | applies to every mesh in the subtree |
-| `label` | `text` (text), `offset` (vec3), `max_distance` (number), `fade` (number) | world-anchored text, see below |
+| `label` | `text` (text), `offset` (vec3), `max_distance` (number), `fade` (number), `through_walls` (boolean) | world-anchored text, see below |
 
 Anything else — visibility, health, mass, light colour — is not writable from a mod. If your
 design needs one, the change is a row in the host's whitelist, not a new verb. Fields,
@@ -83,8 +83,9 @@ yours, write `max_distance` to `0`; to **give the row up**, write it back to its
 defaults. The [rows reference](/reference/components/) states both.
 
 Text is bounded by the value vocabulary — 256 bytes, no control characters, at least one
-visible character — and a label reaches a player's body only inside an event about that
-player, like every body write.
+visible character. A label reaches a player's body inside an event about that player, like
+every body write — or standing, once your manifest declares the row under `body-rows`
+([decorating players](/build/body-decoration/)).
 
 The engine renders labels; a mod never draws. The local player's own label is not shown
 to them.
