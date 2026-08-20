@@ -50,8 +50,15 @@ Not insertable: everything placeable already carries one.
 ## `label`
 
 One line of world-anchored text over the entity, rendered by the engine on
-every peer with a camera. World text, not a UI widget — presentation stays the
-host's.
+every peer with a camera.
+
+The name means what a label on a jar means: an annotation that answers for the
+thing it is attached to. The row states that fact and nothing about form —
+how a label renders (today: camera-facing, constant size, distance-faded) is
+the host's presentation policy, so the name never forks into 2D and 3D
+variants. Text that is an entity's own content rather than an annotation — a
+sign's face, a screen — is a different thing under a different name. A label
+is not a UI widget.
 
 | Path | Kind | Default | Notes |
 |---|---|---|---|
@@ -59,9 +66,16 @@ host's.
 | `offset` | vec3 | `(0, 1.2, 0)` | meters from the entity's origin along the world axes; never rotated with the entity |
 | `max_distance` | number | `30` | camera distance beyond which the label is invisible |
 | `fade` | number | `5` | width of the fade band inside `max_distance`, in meters |
+| `through_walls` | boolean | `false` | whether the label renders when world geometry blocks the sight line |
 
 Visibility is `alpha = clamp((max_distance - distance) / fade, 0, 1)`; a fade
 of zero (or effectively zero) is a hard cutoff at `max_distance`.
+
+A label behaves like a sign: walls hide it. What blocks the sight line is the
+map's collision geometry, so a visual-only mesh with no collider does not
+occlude. Write `through_walls` to `true` when the text is meant to be found —
+a destination marker, a rescue target. It is a rendering intent, not
+information control: the label's data reaches every client either way.
 
 Two idioms, distinct on purpose:
 

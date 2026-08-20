@@ -58,6 +58,13 @@ reaches a player's body — see [Grants](/server/grants/).
 The player running the session. Everything authoritative happens there, and today it
 is a player rather than a dedicated machine — see [Run a server](/start/run-a-server/).
 
+## Label
+
+A mod-written annotation on an entity: one line of text that answers for the thing it
+is attached to. It states a fact about the entity; how it renders is the host's, so
+there is no 2D or 3D variant. Text that is an entity's own content — a sign's face, a
+screen — is not a label. See [Component rows](/reference/components/).
+
 ## Listen server
 
 A session hosted by somebody who is also playing in it. It is the only kind Ironlark
