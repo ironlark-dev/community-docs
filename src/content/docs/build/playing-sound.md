@@ -8,9 +8,25 @@ sidebar:
   order: 47
 ---
 
-A sound is a file you ship, a line in your manifest, and one call. Played from
-your server half every participant hears it; played from your client half it is
-that machine's alone.
+```toml
+# mod.toml — a clip is yours only if you declare it. The file is press.wav,
+# beside this manifest.
+[declares]
+audio-clips = ["press"]
+```
+
+```rust
+use ironlark::host::audio::play;
+
+play("press".to_string(), "effects".to_string(), vec![]).await?;        // your own, bare
+play("ironlark:core:buttons/audio-clip/press".to_string(),              // someone else's, in full
+     "effects".to_string(),
+     vec![("volume".to_string(), 0.8)]).await?;
+```
+
+Imported in both realms. Called from your server half every participant hears
+it; called from your client half it is that machine's alone. `play` is async, so
+it belongs inside one of your `async` handlers.
 
 ## Ship the clip
 
@@ -24,8 +40,8 @@ ironlark/core/buttons/
 
 Wav or ogg/vorbis. Nothing else is accepted, and every clip is fully decoded
 when the addon loads rather than when it first plays — so a file that is
-malformed, too long or too loud a format is caught at the session's start, with
-the reason in the log, instead of hitching a frame later.
+malformed, too long, or in a format the host does not take is caught at the
+session's start with the reason in the log, instead of hitching a frame later.
 
 The envelope a clip must fit:
 
@@ -40,33 +56,26 @@ These are one-shot bounds. Long or looping sound is not this mechanism.
 
 ## Declare it
 
-```toml
-[declares]
-audio-clips = ["press"]
-```
-
 The name is the file's, without its extension. A clip you did not declare
-cannot be played, and a clip you declared with no file beside the manifest
-takes your mod out of the session on the host with a line naming both names it
+cannot be played, and a clip you declared with no file beside the manifest takes
+your mod out of the session on the host, with a line naming both filenames it
 looked for.
 
-## Play it
+## Call it
 
-```rust
-use ironlark::host::audio::play;
+The third argument is a list of named parameters rather than fixed fields, so
+the host can learn new ones without breaking an addon that was compiled before
+them. One name is read today:
 
-let params = vec![("volume".to_string(), 0.8)];
-if let Err(e) = play("press".to_string(), "effects".to_string(), params).await {
-    log(Level::Warn, &format!("press sound refused: {e}"));
-}
-```
+| Name | Range | Absent means |
+|---|---|---|
+| `volume` | 0.0 to 1.0, clamped | 1.0 |
 
-`"press"` is your own clip. To play a clip another addon ships, name it in full:
-`"ironlark:core:buttons/audio-clip/press"` — the same rule every other
-name-taking call follows.
+Pass `vec![]` when you have nothing to say. A name the host does not know is
+ignored.
 
-`Ok` means the host accepted it. It does not mean anyone heard it: see
-[what a listener decides](#what-a-listener-decides).
+`Ok` means the host accepted your sound and put it on the wire. It does not mean
+anyone heard it — see [what a listener decides](#what-a-listener-decides).
 
 ## The three buses
 
@@ -114,16 +123,54 @@ Any of these silently drops it:
 - your bus's gain is zero
 - that bus already carries 32 sounds
 
-None of this is reported back to you, because the same sound is playing
-normally for everyone who did not silence it. Do not treat a played sound as
-something that happened: it is an offer.
+None of it is reported back to you, because the same sound is playing normally
+for everyone who did not silence it. So do not treat a played sound as something
+that happened: it is an offer.
 
-Write your handler so a refusal is logged and the rest still runs. A button
-that stops toggling because someone muted your addon is a worse bug than a
-silent button.
+Write your handler so a refusal is logged and the rest still runs. A button that
+stops toggling because someone muted your addon is a worse bug than a silent
+button.
 
-## Proving it works
+## A whole one, working
 
-The bundled `ironlark:core:buttons` addon plays `press` from its interact
-handler — press the button in game and you hear it. Its manifest and source are
-the shortest complete example of everything on this page.
+This is `ironlark:core:buttons`, the addon that ships with the game. Press its
+pedestal in game and you hear the clip.
+
+```toml
+# mod.toml
+[declares]
+channels = ["pressed"]
+audio-clips = ["press"]
+```
+
+```rust
+use ironlark::host::audio::play;
+use ironlark::host::log::{Level, log};
+
+impl Guest for Component {
+    async fn on_interact(
+        player_id: String,
+        target: String,
+        _hit_point: exports::ironlark::host::server_api::Vec3,
+        distance: f32,
+    ) {
+        if target != BUTTON_ID {
+            return;
+        }
+        // ... the press does its work ...
+        press_sound().await;
+    }
+}
+
+/// The press, heard by everyone in the session. A refusal is logged and the
+/// press still happens: a mod that stops working because a listener muted it
+/// would be worse than a silent button.
+async fn press_sound() {
+    let params = vec![("volume".to_string(), 0.8)];
+    if let Err(e) = play("press".to_string(), "effects".to_string(), params).await {
+        log(Level::Warn, &format!("buttons: press sound refused: {e}"));
+    }
+}
+```
+
+Every signature here is in the [`audio` reference](/reference/audio/).
