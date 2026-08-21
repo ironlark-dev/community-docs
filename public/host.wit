@@ -31,6 +31,25 @@ interface ui {
   set-overlay-text: func(text: string);
 }
 
+// One-shot sound playback (ADR 0045).
+//
+// `clip` follows the rule every name-taking import follows: a bare name is one
+// of the CALLER's own `[declares] audio-clips` and the host qualifies it to
+// `<caller>/audio-clip/<name>`; a name carrying `:` is another mod's, taken as
+// written. `category` is one of the host-published buses a mod may emit into:
+// "effects", "footsteps" or "music" — "interface" and "voice" are the host's
+// and are refused. `params` is a named-value list so it can grow without a
+// break; the one name read today is "volume", from 0.0 to 1.0 and clamped.
+//
+// In the server realm every participant hears it; in the client realm it is
+// this machine's alone. What is heard is still the listener's decision: a
+// muted addon, a silenced bus or a full bus drops the sound without telling
+// the caller, because the same sound is playing for everyone who did not
+// silence it.
+interface audio {
+  play: async func(clip: string, category: string, params: list<tuple<string, f32>>) -> result<_, string>;
+}
+
 // The session roster (ADR 0040): the server-resolved facts about a
 // participant, as named string values. Read-only — the host owns the table,
 // fills it on join and drops the row on leave; mods never hold a copy.
@@ -419,6 +438,7 @@ interface gamemode {
 
 world server-mod {
   import log;
+  import audio;
   import broadcast;
   import entity;
   import gamemode;
@@ -431,6 +451,7 @@ world server-mod {
 
 world client-mod {
   import log;
+  import audio;
   import ui;
   import profile;
   import rpc-out;
