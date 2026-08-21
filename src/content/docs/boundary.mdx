@@ -122,9 +122,17 @@ to it with exactly one active at a time, and the body a persona is currently dri
 Personas will carry named traits with a declared visibility — public, owner-only, or
 server-only — and permadeath becomes destroying a persona while the account lives on.
 
-### No sound
+### Sound is one-shots only
 
-There is no audio API at all, and no design for one yet.
+You can ship a clip and play it, and every listener hears it at one volume
+wherever they stand -> [Playing a sound](/build/playing-sound/).
+
+What does not exist is sound that has a place: a source anchored to an entity,
+audible by distance, still playing when someone joins halfway through. Nor
+looping or continuous sound of any kind, nor voice.
+
+**Instead:** one-shots keyed to things that happen. A press, an impact, a
+pickup.
 
 ### No timers, no scheduling, no randomness
 
