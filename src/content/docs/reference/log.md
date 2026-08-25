@@ -10,6 +10,8 @@ sidebar:
 From `host.wit`. Edit the WIT, not this page.
 :::
 
+Imported by both halves of a mod.
+
 ## Functions
 
 | Function | Summary |
