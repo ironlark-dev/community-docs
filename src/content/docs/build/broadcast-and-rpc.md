@@ -20,8 +20,8 @@ channels = ["score"]
 ```
 
 ```rust
-broadcast::send("score", payload).await?;                 // everyone
-broadcast::send_to(&player_id, "score", payload).await?;  // one player
+broadcast::send("score".into(), payload).await?;                 // everyone
+broadcast::send_to(player_id.clone(), "score".into(), payload).await?;  // one player
 ```
 
 Both deliver to the **client half of the mod that declared the channel**, on the receiving
@@ -58,7 +58,7 @@ methods = ["buy"]
 ```
 
 ```rust
-let reply = rpc_out::call("buy", args).await?;   // client half only
+let reply = rpc_out::call("buy".into(), args).await?;   // client half only
 ```
 
 The host routes the call to the mod that **declared** that method, and to no other. Your
@@ -66,9 +66,9 @@ server half receives the bare name in `handle-rpc`; a name carrying `:` names an
 method. An undeclared name is refused at the call.
 
 Two mods may each declare `buy`: the host qualifies each with its owner, so they are
-different methods and neither shadows the other. Before methods were declared, the host
-offered a call to every loaded mod until one answered, which made whichever mod sorted first
-able to reject everybody else's RPCs.
+different methods and neither shadows the other. That is what the declaration buys — a
+call reaches the one mod that declared the name, rather than being offered around until
+something answers, which would let whichever mod sorted first reject everybody else's.
 
 ## The pattern that avoids lying to yourself
 

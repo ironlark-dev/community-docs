@@ -66,8 +66,8 @@ async fn init() {
 async fn on_player_join(player_id: String) {
     let spawns = map_api::list_spawns().await;      // never empty
     let at = pick(&spawns);
-    let body = entity::spawn("character", at).await?;
-    entity::control(&player_id, &body).await?;
+    let body = entity::spawn("character".into(), at).await?;
+    entity::control(player_id.clone(), &body).await?;
 }
 ```
 

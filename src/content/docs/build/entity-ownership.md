@@ -49,8 +49,8 @@ Name what you want to reach again, and `find` returns instances anyone placed:
 
 ```rust
 // in the archetype's own addon
-identify(&handle, "balloon:7").await?;
-let mine = find("balloon").await?;   // every balloon of yours in the session
+identify(&handle, "balloon:7".into()).await?;
+let mine = find("balloon".into()).await?;   // every balloon of yours in the session
 ```
 
 :::tip

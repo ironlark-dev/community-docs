@@ -17,8 +17,8 @@ and a person.
 Creation and control are **separate steps**, deliberately:
 
 ```rust
-let body = entity::spawn("character", at).await?;
-entity::control(&player_id, &body).await?;
+let body = entity::spawn("character".into(), at).await?;
+entity::control(player_id.clone(), &body).await?;
 ```
 
 `character` is the built-in character body — the movement controller, collider and camera
@@ -47,12 +47,12 @@ spent when you despawn the entity or when your mod reloads.
 To reach an entity again later, name it:
 
 ```rust
-entity::identify(&e, "balloon/alice").await?;      // once
-let found = entity::find("balloon").await?;        // any time after
+entity::identify(&e, "balloon/alice".into()).await?;      // once
+let found = entity::find("balloon".into()).await?;        // any time after
 ```
 
-Ids are `/`-delimited so related entities share a prefix: `find("balloon")` returns
-everything beneath it, and `find("")` returns all of your mod's identified entities.
+Ids are `/`-delimited so related entities share a prefix: `find("balloon".into())` returns
+everything beneath it, and `find("".into())` returns all of your mod's identified entities.
 
 **Naming is scoped to your mod, and it is additive.** You name within your own namespace,
 `find` sees only names you gave, and your name for an entity never displaces another mod's.
@@ -76,7 +76,7 @@ a named descendant by its authored node name, and returns a handle you can read 
 like any other:
 
 ```rust
-let cap = entity::part(&button, "cap").await?;
+let cap = entity::part(&button, "cap".into()).await?;
 ```
 
 Names come from the model, so a path survives a re-export. `""` is the entity itself.

@@ -17,8 +17,9 @@ same contract.
 
 ## What currently narrows it
 
-Every function in `host.wit` is an **async** function — including every function a mod must
-*export*. Implementing an async export needs component-model-async support in your language's
+Every function a mod must **export** is an async function — all eight of `server-api`, all
+three of `client-api`. Most imports are async too; a handful that cannot fail or block are
+not. Implementing an async export needs component-model-async support in your language's
 bindings generator, and that support is new. Rust's `wit-bindgen` has it, and the reference
 mods use it.
 
@@ -62,8 +63,10 @@ Rust, because it is the only toolchain this has been done in:
 
 ```rust
 impl Guest for Component {
-    fn init() { log(Level::Info, "hello"); }
-    fn update(_dt: f32) {}
+    async fn init() { log(Level::Info, "hello"); }
+    async fn update(_dt: f32) {}
+    // and the other six of `server-api`, empty if you have nothing to do in
+    // them: a component that omits one does not instantiate.
 }
 ```
 
