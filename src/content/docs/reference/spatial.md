@@ -11,6 +11,8 @@ sidebar:
 From `host.wit`. Edit the WIT, not this page.
 :::
 
+Imported by a mod's server half only.
+
 ## Functions
 
 | Function | Summary |
@@ -39,9 +41,8 @@ sphere. Result count is capped like `find`'s.
 
 ### `handle`
 
-```wit
-type handle = handle;
-```
+The same opaque entity handle [`entity`](/reference/entity/) issues; this
+interface borrows one rather than minting its own.
 
 ### `vec3`
 

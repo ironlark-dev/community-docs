@@ -19,6 +19,7 @@ channels = ["opened"]
 methods = ["buy"]
 actions = ["echo"]
 body-rows = ["label"]
+sounds = ["press"]
 
 [[declares.archetype]]
 id = "pedestal"
@@ -53,9 +54,9 @@ engine.
 
 Optional as a whole: a mod that declares no content and fills no role can omit it.
 
-Everything a mod claims a name for lives under this one word. `archetype` is the kind that
-exists today; the grammar reserves `channel`, `method`, `action` and `feature` for the same
-place.
+Everything a mod claims a name for lives under this one word, and every key below is a
+kind in the same grammar: what you declare here is addressable as
+`<author>:<addon>:<mod>/<kind>/<name>`.
 
 **Unknown keys here are rejected** and stop the manifest from parsing, because a silently
 ignored typo is a declaration that never applied with nothing saying so.
@@ -67,9 +68,13 @@ ignored typo is a declaration that never applied with nothing saying so.
 | `methods` | RPC methods this mod answers. A `call` goes to the mod that declared the method and to no other. |
 | `actions` | Host input actions this mod answers in `on-input`. These are the host's names, not yours, so a name the host does not publish fails at session start. |
 | `body-rows` | Decoration rows this mod writes on player bodies — today exactly `label`. Declaring one is the whole permission: enabling the addon appoints it, and the server states the declaration at session start. A row the host does not classify as decoration fails the manifest. One row has one holder per session — first in the server's addon order. See [Decorating players](/build/body-decoration/). |
+| `sounds` | The sounds this mod ships. Each name is a `<name>.wav` or `<name>.ogg` file beside this manifest, and `play` accepts a bare name only if it is listed here. A declared sound with no file, or one outside the size and length envelope, takes the mod out of the session. See [Playing a sound](/build/playing-sound/). |
 | `archetype` | Repeated `[[declares.archetype]]` blocks; see below. |
 
-Every name here is `[a-z0-9][a-z0-9-]*` — lowercase ASCII, digits and hyphens.
+Every name here is `[a-z0-9][a-z0-9-]*` — lowercase ASCII, digits and hyphens. **No
+underscores**, which is the one that bites: `door_open` fails the manifest, and a manifest
+that fails takes the whole mod with it. That applies to filenames you declare too — a sound
+shipped as `door_open.wav` cannot be declared, so name the file `door-open.wav`.
 Uppercase is rejected, not folded.
 
 A name you declare is yours: the host addresses it as

@@ -17,7 +17,7 @@ imports, and the host loads them in different places.
 |---|---|---|
 | Runs on | the host only | every peer, including the host |
 | Authority | decides what is true | presents what it is told |
-| May import | `log`, `broadcast`, `entity`, `gamemode`, `map-api`, `signal`, `spatial` | `log`, `ui`, `rpc-out` |
+| May import | `log`, `audio`, `broadcast`, `entity`, `gamemode`, `map-api`, `profile`, `signal`, `spatial` | `log`, `audio`, `ui`, `profile`, `rpc-out` |
 | Must export | `server-api` | `client-api` |
 
 The split is not a suggestion: the client half physically cannot spawn an entity or move
@@ -30,8 +30,8 @@ a player's screen or to react to a key.
 ## Both halves must export everything
 
 The host calls every function in the exported interface, so a component that omits one does
-not instantiate — and a mod that fails to instantiate takes the whole session's mod loading
-with it: nothing spawns, and the log carries one warning.
+not instantiate. It takes itself out of the session and nothing else with it: the host logs
+an error naming the mod and the reason, and the session carries on without it.
 
 `server-api` has eight: `init`, `on-player-join`, `on-player-leave`, `update`, `on-interact`,
 `on-signal`, `on-contact`, `handle-rpc`.
@@ -65,8 +65,10 @@ Two consequences worth internalising:
 - **`init` is early.** Colliders and scene children may not exist yet. Work that needs the
   world to be ready belongs in `update`, retried until it succeeds — that is how the
   `watchman` reference mod places itself.
-- **A mod that fails to load blocks joins.** The host defers player joins until every server
-  mod reports loaded, so one broken component means nobody gets a body.
+- **A mod that fails to load does not block joins.** The host waits for every queued server
+  mod to report an *outcome*, not a success — a mod that cannot load never runs an `init`
+  there is anything to wait for. Holding the gate for it would stop joins, spawning, the
+  tick and the signal bus for the whole session.
 
 ## The tick
 

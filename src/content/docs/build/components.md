@@ -13,7 +13,7 @@ sidebar:
 There is no `set-position`, no `set-colour`, no `set-scale`. There is one verb:
 
 ```rust
-entity::set_component(&e, "transform", &[
+entity::set_component(&e, "transform".into(), vec![
     ComponentField { path: "translation".into(), value: FieldValue::Vec3(there) },
 ]).await?;
 ```
@@ -39,13 +39,15 @@ defaults and per-row properties are listed on the
 
 On a physics body, `translation` and `rotation` route to the physics position and rotation
 rather than the render transform, so a write genuinely moves the thing rather than fighting
-the simulation for a frame. `scale` stays on the transform.
+the simulation for a frame. `scale` stays on the transform, and only there: the collider
+that receives a use-ray or a touch follows position and rotation, not size. Scale an
+interactable up and it looks bigger while staying pressable over its original volume.
 
 This is what makes teleporting work:
 
 ```rust
-let body = entity::body_of(&player).await?;
-entity::set_component(&body, "transform", &[
+let body = entity::body_of(player.clone()).await?;
+entity::set_component(&body, "transform".into(), vec![
     ComponentField { path: "translation".into(), value: FieldValue::Vec3(spawn) },
 ]).await?;
 ```
@@ -62,7 +64,7 @@ write per mesh, so recolouring one instance never tints the others.
 ## `label` is text over an entity, and it answers to you
 
 ```rust
-entity::set_component(&panel, "label", &[
+entity::set_component(&panel, "label".into(), vec![
     ComponentField { path: "text".into(), value: FieldValue::Text("Teleport".into()) },
 ]).await?;
 ```

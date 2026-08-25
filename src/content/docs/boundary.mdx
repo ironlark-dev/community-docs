@@ -53,17 +53,19 @@ flagged entity.
 
 ### One input action, and it is a debug key
 
-There is no input system for mods. Exactly one action reaches client mods — the name
-`echo`, sent when **F** is pressed — and every client mod sees it. You cannot bind a
-key, name an action, or read movement input.
+There is no input system for mods. Exactly one action exists — the name `echo`, sent
+when **F** is pressed — and it reaches only the client halves that declared it under
+`[declares] actions`. You cannot bind a key, name an action of your own, or read
+movement input.
 
 **Instead:** trigger volumes for "do a thing here", and interact (**E**) for "use this
 object". Both are real mechanisms, not stand-ins.
 
 ### Elimination has no spectator
 
-You cannot despawn your own body, and there is one camera which is a child of the
-body — so a player without a body sees black rather than the world.
+There is one camera and it is a child of the body, so a player without a body sees
+black rather than the world. A gamemode that spawned the body may despawn it — nothing
+stops you leaving a player with nothing to look through.
 
 **Instead:** "eliminated" has to mean *moved*. Teleport them to a pen, a balcony, a
 jail. It plays better anyway, because they can watch and heckle.
@@ -124,7 +126,7 @@ server-only — and permadeath becomes destroying a persona while the account li
 
 ### Sound is one-shots only
 
-You can ship a clip and play it, and every listener hears it at one volume
+You can ship a sound and play it, and every listener hears it at one volume
 wherever they stand -> [Playing a sound](/build/playing-sound/).
 
 What does not exist is sound that has a place: a source anchored to an entity,

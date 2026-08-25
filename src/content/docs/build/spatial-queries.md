@@ -59,9 +59,9 @@ async fn can_see(eye: Vec3, target: Vec3) -> bool {
     let to = Vec3 { x: target.x - eye.x, y: target.y - eye.y, z: target.z - eye.z };
     let dist = (to.x * to.x + to.y * to.y + to.z * to.z).sqrt();
     match spatial::raycast(eye, to, dist).await {
-        // something solid is between us
+        // the first thing hit is at the far end, so it is the target itself
         Some(hit) => hit.distance >= dist - 0.1,
-        // clear line
+        // nothing in the way at all
         None => true,
     }
 }

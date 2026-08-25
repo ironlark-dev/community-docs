@@ -1,0 +1,114 @@
+---
+title: "Linux: sound and devices"
+description: "Which output the game takes on Linux, how to see it in the log, and what to do when the game is the only silent application on the machine."
+kind: how-to
+area: start
+sidebar:
+  order: 5
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Everything here is about one question: which output the game plays through. On Linux
+that question has more than one answer, and the machine does not always agree with
+itself about which is right.
+
+## See which output was taken
+
+The game states it once, at startup, and you do not need to raise the log level:
+
+```bash
+grep 'stage="output"' logs/game.log
+```
+
+A healthy line names the output and the format the machine reports for it:
+
+```
+INFO ironlark::audio: opened stage="output" output=PipeWire Sound Server (44100 Hz, 2 ch, F32)
+```
+
+The role in the filename follows how you started: `host.log` with `--become-host`,
+`client.log` with `--connect-to`, `game.log` otherwise.
+
+## The game is the only application with no sound
+
+That symptom has one common cause on Linux, and it is not the game's settings.
+
+A desktop runs a sound server — PipeWire on most systems now, PulseAudio before it —
+and the server owns the hardware. Applications reach it in one of two ways: they speak
+the server's own protocol, or they go through ALSA and rely on ALSA's `default` being
+routed to the server. That routing is a configuration file, and it is not always in
+place. When it is missing, `default` addresses a sound card directly — often the first
+one, which on a machine with an external interface is the one nobody is listening to.
+
+The result is a game that opens an output successfully and plays into it while you hear
+nothing, because your speakers are on a different card.
+
+The game prefers the sound server over `default` when the server is already running,
+which is what makes this work without configuration. What follows is for the machines
+where you want to choose yourself.
+
+## Choose the output yourself
+
+In `config/server.toml` beside the game:
+
+```toml
+[audio]
+device = "pipewire"
+```
+
+Either name works: the system's own name for an output, or the name a person reads.
+
+`default` is the one value that is not an output. It asks for whatever the game would
+have chosen on its own, which is how a setting is undone without editing the key away:
+
+```toml
+[audio]
+device = "default"
+```
+
+<Aside type="caution" title="A pinned output is not followed">
+A device you name is the one the game keeps. Unplug it and the game does not move to
+another; the sound server does that for you only while the game is playing through the
+server rather than through a card you named.
+</Aside>
+
+## See what you could have named
+
+Name something that does not exist, and the refusal carries the whole list:
+
+```bash
+grep 'no output of this' logs/game.log
+```
+
+The names are the ones ALSA publishes, so `aplay -L` shows the same set.
+
+## Turn game sound off
+
+```toml
+[audio]
+enabled = false
+```
+
+Nothing is opened at all, which is also the answer when a driver writes complaints to
+the terminal that no log level of ours can filter.
+
+## Trace the whole path
+
+Every audio record carries a `stage`, and the stages are the path a sound takes:
+`settings`, `output`, `bus`, `decode`, `admit`, `gate`, `start`, `advance`, `end`,
+`summary`. To follow one sound:
+
+```bash
+grep 'ironlark::audio' logs/game.log
+```
+
+`advance` is per-frame and off unless asked for. It reports the playback position of
+every sound in flight, which is how a mixer that has stopped moving is told apart from
+one that is playing where you cannot hear it:
+
+```bash
+RUST_LOG="ironlark::audio=trace" ./ironlark-game
+```
+
+The console stays quiet at its usual level; the extra detail goes to the file.

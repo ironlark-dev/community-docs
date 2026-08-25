@@ -41,19 +41,24 @@ their world never loads. Their log says which.
 **Fix:** give them the map's addon. Note this reproduces reliably only on the first
 join into a fresh process, so a second attempt "working" does not mean it is fixed.
 
-## Nobody spawns, and no mod seems to run
+## A mod does not run, and the session is otherwise fine
 
-**Cause:** the host holds every join until **all** server mods report loaded, so one
-component that fails to load stops the entire session — not just itself.
+**Cause:** it did not load. A mod that fails takes itself out of the session and nothing
+else with it — joins, spawning and the tick all carry on — so the only symptom is the one
+mod's absence.
 
-**Fix:** look near session start in the host log for a load error, or an
-`already loaded; ignoring` warning. In order of how often it is the answer:
+**Fix:** look near session start in the host log for the error naming it:
+
+```
+grep 'is out for this session' logs/host.log
+```
+
+In order of how often it is the answer:
 
 1. **A missing export.** A component that does not implement every function of its
    world will not instantiate. Write the empty stubs.
 2. **A stale vendored contract.** The mod's copy of `host.wit` must match the host's.
-   A mismatch fails to instantiate, quietly.
-3. **Two mods with the same directory name.** The second is ignored with a warning.
+   A mismatch fails to instantiate, and the reason is in that same line.
 
 ## The session refuses to start and names two gamemodes
 

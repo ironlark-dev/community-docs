@@ -75,8 +75,8 @@ archetype name. Naming is still worth it: it is how you tell two instances apart
 
 ```rust
 async fn init() {
-    let zone = spawn("zone", at).await?;
-    identify(&zone, "zone/hill").await?;      // so `target` names this one
+    let zone = spawn("zone".into(), at).await?;
+    identify(&zone, "zone/hill".into()).await?;      // so `target` names this one
 }
 
 async fn on_contact(target: String, other: ContactParty, _p: Vec3, edge: ContactEdge) {

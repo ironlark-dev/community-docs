@@ -48,9 +48,9 @@ instead of the upstream's.
 
 **Ownership is not enforced, but existence is.** Anyone may emit on a channel you own — a
 gamemode commanding another mod's channel is the intended shape. What is refused is a name
-nobody declared: `subscribe` used to accept any string and return ok, so a renamed channel
-left a subscriber that never fired and an emitter nobody heard, with nothing anywhere saying
-why. Both sides now fail where the name is written, naming the manifest to check.
+nobody declared, and it is refused where the name is written — at `emit` and at `subscribe`
+alike, naming the manifest to check. An accepted subscribe on a name nobody emits would
+leave you waiting forever with nothing anywhere saying why.
 
 ## Put the data in the payload
 

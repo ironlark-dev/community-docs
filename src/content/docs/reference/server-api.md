@@ -20,8 +20,8 @@ From `host.wit`. Edit the WIT, not this page.
 | [`handle-rpc`](#handle-rpc) |  |
 | [`update`](#update) | Fixed-rate server tick. |
 | [`on-interact`](#on-interact) | A player used (pressed interact on) one of this mod's interactable entities. |
-| [`on-signal`](#on-signal) | A signal arrived on a channel this mod subscribed to. `source` is the emitting mod's addon id, stamped by the host — unforgeable, so policy ("only the gamemode commands me", "facts only from the protocol owner") is one comparison. |
-| [`on-contact`](#on-contact) | Physical touch on one of this mod's contact entities (archetypes declaring `contact = true`), for entities this mod named via `identify` — `target` is that id in the mod's own scope. |
+| [`on-signal`](#on-signal) | A signal arrived on a channel this mod subscribed to. `source` is the emitting mod's full `author:addon:mod` id, stamped by the host — unforgeable, so policy ("only the gamemode commands me", "facts only from the protocol owner") is one comparison. |
+| [`on-contact`](#on-contact) | Physical touch on one of this mod's contact entities (archetypes declaring `contact = true`). `target` is this mod's own name for the instance, or the bare archetype name when it was never named. |
 
 ### `init`
 
@@ -76,8 +76,10 @@ on-interact: async func(player-id: string, target: string, hit-point: vec3, dist
 A player used (pressed interact on) one of this mod's interactable entities.
 The host raycasts authoritatively from the player's body and routes the hit
 to the archetype owner's mod — only archetypes declaring `interact = true`
-arrive here, and only for entities this mod named via `identify`. `target`
-is that id in the mod's own scope, so it feeds straight into entity.find.
+arrive here. `target` is this mod's own name for the instance when it named
+one with `identify`, and otherwise the bare archetype name, so a mod hears
+something it recognises for an instance another mod placed. A name feeds
+straight into entity.find.
 `hit-point` is where the use-ray struck, in world space — on a multi-part
 entity it tells WHICH part was pressed; `distance` is from the presser's
 body to that point, the same measure the host's reach limit enforces.
@@ -89,11 +91,12 @@ on-signal: async func(channel: string, source: string, payload: list<u8>);
 ```
 
 A signal arrived on a channel this mod subscribed to. `source`
-is the emitting mod's addon id, stamped by the host — unforgeable, so
-policy ("only the gamemode commands me", "facts only from the protocol
-owner") is one comparison. The payload carries everything the handler
-needs: a signal does not synchronize with the emitter's queued entity
-verbs, so "hear signal, then read the world" is an anti-pattern.
+is the emitting mod's full `author:addon:mod` id, stamped by the host
+rather than supplied by the sender — unforgeable, so policy ("only the
+gamemode commands me", "facts only from the protocol owner") is one
+comparison. The payload carries everything the handler needs: a signal
+does not synchronize with the sender's queued entity verbs, so "hear
+signal, then read the world" is an anti-pattern.
 
 ### `on-contact`
 
@@ -102,10 +105,13 @@ on-contact: async func(target: string, other: contact-party, point: vec3, edge: 
 ```
 
 Physical touch on one of this mod's contact entities (archetypes declaring
-`contact = true`), for entities this mod named via `identify` —
-`target` is that id in the mod's own scope. When both parties are contact
-entities, each owner hears about its own. `point` is where the touch sits
-in world space (on `ended` — where the other party separated to).
+`contact = true`). It is routed to the mod that declared the archetype,
+whoever spawned the instance, and `target` is this mod's own name for that
+instance — or the bare archetype name, when the instance was never named
+with `identify`. An unnamed instance still reaches you. When both parties
+are contact entities, each declaring mod hears about its own. `point` is
+where the touch sits in world space (on `ended` — where the other party
+separated to).
 
 ## Types
 

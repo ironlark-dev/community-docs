@@ -2,24 +2,24 @@
 kind: how-to
 area: build
 title: "Playing a sound"
-description: "Ship a clip with your addon, declare it in the manifest, and play it with one call — from either realm."
+description: "Ship a sound with your addon, declare it in the manifest, and play it with one call — from either realm."
 sidebar:
   label: "Playing a sound"
   order: 47
 ---
 
 ```toml
-# mod.toml — a clip is yours only if you declare it. The file is press.wav,
+# mod.toml — a sound is yours only if you declare it. The file is press.wav,
 # beside this manifest.
 [declares]
-audio-clips = ["press"]
+sounds = ["press"]
 ```
 
 ```rust
 use ironlark::host::audio::play;
 
 play("press".to_string(), "effects".to_string(), vec![]).await?;        // your own, bare
-play("ironlark:core:buttons/audio-clip/press".to_string(),              // someone else's, in full
+play("ironlark:core:buttons/sound/press".to_string(),                   // someone else's, in full
      "effects".to_string(),
      vec![("volume".to_string(), 0.8)]).await?;
 ```
@@ -28,9 +28,13 @@ Imported in both realms. Called from your server half every participant hears
 it; called from your client half it is that machine's alone. `play` is async, so
 it belongs inside one of your `async` handlers.
 
-## Ship the clip
+## Ship the sound
 
-The file sits beside `mod.toml`, named after the clip:
+The file sits beside `mod.toml`, named after the sound. The name obeys the same
+charset as everything else you declare — lowercase ASCII, digits and hyphens,
+**no underscores**. `door_open.wav` cannot be declared, and a manifest that
+fails takes the whole mod with it, so the symptom is "my mod vanished" rather
+than "my sound is broken". Name it `door-open.wav`.
 
 ```
 ironlark/core/buttons/
@@ -38,26 +42,28 @@ ironlark/core/buttons/
   press.wav
 ```
 
-Wav or ogg/vorbis. Nothing else is accepted, and every clip is fully decoded
+Wav or ogg/vorbis. Nothing else is accepted, and every sound is fully decoded
 when the addon loads rather than when it first plays — so a file that is
 malformed, too long, or in a format the host does not take is caught at the
 session's start with the reason in the log, instead of hitching a frame later.
 
-The envelope a clip must fit:
+The envelope a sound must fit:
 
 | Bound | Limit |
 |---|---|
-| File size | 4 MiB |
-| Length | 15 seconds |
-| Sample rate | 48 kHz |
-| Channels | 2 |
+| File size | at most 4 MiB |
+| Length | at most 15 seconds |
+| Sample rate | at most 48 kHz |
+| Channels | at most 2 |
+
+A ceiling, not a target: a 44.1 kHz mono sound is fine as it is.
 
 These are one-shot bounds. Long or looping sound is not this mechanism.
 
 ## Declare it
 
-The name is the file's, without its extension. A clip you did not declare
-cannot be played, and a clip you declared with no file beside the manifest takes
+The name is the file's, without its extension. A sound you did not declare
+cannot be played, and a sound you declared with no file beside the manifest takes
 your mod out of the session on the host, with a line naming both filenames it
 looked for.
 
@@ -77,28 +83,35 @@ ignored.
 `Ok` means the host accepted your sound and put it on the wire. It does not mean
 anyone heard it — see [what a listener decides](#what-a-listener-decides).
 
-## The three buses
+## The buses
 
 Your sound is heard on a bus the listener controls separately:
 
 | Bus | For |
 |---|---|
-| `effects` | one-shots: presses, impacts, pickups |
-| `footsteps` | locomotion |
-| `music` | anything a player will want to turn down on its own |
+| `effects` | one-shots caused by something in the world: presses, impacts, pickups |
+| `environment` | continuous background: wind, rain, a generator's hum |
+| `interface` | your own interface, with no position |
+| `music` | anything a player will want to turn down on its own — but see the length bound above: real background music needs looping, which does not exist yet |
 
-Two more exist — `interface` and `voice` — and belong to the host. Naming
-either is refused. Players keep interface audio loud and rarely mute it, and a
+One more exists — `voice` — and belongs to the host. Naming it is refused: a
 bus players trust to be other people talking must not be able to carry an
-addon's noise.
+addon's noise, and a sound you ship is not a voice.
 
-An unknown bus name is not an error on the listening machine: it is heard on
-`effects` with one warning. That is what lets a bus be added later without
-silencing an addon compiled against the older list.
+Your own typo is **not** covered by that. `play("efects", ...)` is refused at
+the call, naming the bus you wrote — the check is a string compare against the
+names above, so it happens at runtime and nowhere earlier. There is nothing to
+declare, so nothing catches it at load. Log the `Err` or you will not see it.
+
+Separately, and only for sounds arriving from a newer peer: a bus name this
+build does not know is heard on `effects` with one warning rather than dropped.
+That is what lets a bus be added later without silencing an addon compiled
+against the older list.
 
 ## Your allowance
 
-Sound is the cheapest way to be a nuisance, so it is counted per addon:
+Sound is the cheapest way to be a nuisance, so it is counted per mod — an addon of
+three mods holds three allowances, and a refusal names the mod:
 
 | | |
 |---|---|
@@ -107,8 +120,9 @@ Sound is the cheapest way to be a nuisance, so it is counted per addon:
 | Burst | 8 |
 
 Both bind, because either alone is easy to walk around. Past them, `play`
-returns a refusal whose text starts with `audio-quota:` — a stable token, so
-you can back off on it without matching prose.
+returns a refusal carrying `audio-quota:` after the mod's own id — a stable
+token, so you can back off on `e.contains("audio-quota:")` without matching
+prose.
 
 Your count comes back as each sound ends, and everything you hold is returned
 if your mod is reloaded or quarantined.
@@ -122,6 +136,8 @@ Any of these silently drops it:
 - the listener muted your addon by name
 - your bus's gain is zero
 - that bus already carries 32 sounds
+- that machine does not hold the sound — its own copy failed to decode, which is
+  the one that fires when your sound works on your box and not on a friend's
 
 None of it is reported back to you, because the same sound is playing normally
 for everyone who did not silence it. So do not treat a played sound as something
@@ -131,16 +147,42 @@ Write your handler so a refusal is logged and the rest still runs. A button that
 stops toggling because someone muted your addon is a worse bug than a silent
 button.
 
+To find out which of these happened, read the log: every audio record carries a
+`stage`, and `gate` is where this machine's own decisions appear. On Linux, start
+with [sound and devices](/start/linux/) — the commonest cause of hearing nothing at
+all is the output, not the gate.
+
+## A sound only one player hears
+
+`play` from your server half reaches every participant; there is no per-player
+argument. To reach one player, send to them and let their machine play it:
+
+```rust
+// server half: tell one player, on a channel you declared
+broadcast::send_to(player_id, "chime".to_string(), vec![]).await?;
+```
+
+```rust
+// client half: that machine, and only that machine, plays
+async fn on_message(channel: String, _data: Vec<u8>) {
+    if channel != "chime" { return; }
+    let _ = play("chime".to_string(), "effects".to_string(), vec![]).await;
+}
+```
+
+It costs a declared channel and a client half, and it is the only route today.
+See [Broadcast and RPC](/build/broadcast-and-rpc/) for the channel half of it.
+
 ## A whole one, working
 
 This is `ironlark:core:buttons`, the addon that ships with the game. Press its
-pedestal in game and you hear the clip.
+pedestal in game and you hear the sound.
 
 ```toml
 # mod.toml
 [declares]
 channels = ["pressed"]
-audio-clips = ["press"]
+sounds = ["press"]
 ```
 
 ```rust

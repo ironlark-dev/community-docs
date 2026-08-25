@@ -45,9 +45,12 @@ resolves consequence.
 
 ## Presses follow a moving object
 
-The collider that receives the ray is kept in step with the visual each frame, so an
-interactable that your mod moves stays pressable where it appears — a patrolling pedestal is
-pressable along its path, not at the spot it started.
+The collider that receives the ray is kept at the visual's position and rotation every
+frame, so an interactable that your mod moves stays pressable where it appears — a
+patrolling pedestal is pressable along its path, not at the spot it started.
+
+Size is the exception: `scale` is not carried across, so scaling an interactable changes
+what a player sees and not what they can press. Change the archetype's shape instead.
 
 ## Hover feedback
 

@@ -43,6 +43,7 @@ manifest, so nothing below repeats the name.
 1. **Mark the addon root** — `addon.toml`
 
    ```toml
+   [addon]
    version = "0.1.0"
    ```
 
@@ -78,7 +79,7 @@ manifest, so nothing below repeats the name.
    [profile.release]
    opt-level = "z"
    lto = true
-   strip = true
+   strip = "debuginfo"
    ```
 
 4. **Pin the target** — `.cargo/config.toml`
@@ -282,7 +283,7 @@ first step.
 In `logs/host.log`:
 
 ```
-workshop: 8 mod(s) — … tutorial:hello:hellomode 0.1.0
+workshop: 10 mod(s) — … tutorial:hello:hellomode 0.1.0
 gamemode: tutorial:hello:hellomode
 hellomode: init, we own spawn now
 gamemode: 'tutorial:hello:hellomode' set default-spawn = false

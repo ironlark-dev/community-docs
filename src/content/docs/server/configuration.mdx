@@ -21,7 +21,7 @@ anyone on the machine, and a configuration file is the thing you commit and shar
 
 ```toml
 [session]
-addons = ["core", "ironlark:examples"]
+addons = ["ironlark:examples"]
 gamemode = "ironlark:core:freeroam"
 map = "ironlark:core:badgrass"
 
@@ -87,8 +87,8 @@ know something the host cannot: whether this instance is a small container or a 
 expected to carry a heavy scripting pack. A value below 2 refuses to start — no shipped
 mod can instantiate under it — and the resolved value is printed once at startup.
 
-Like `[grants]`, this section is read only by the host; nothing here is ever handed to
-an addon.
+Like [`[grants]`](/server/grants/), this section is read only by the host; nothing here
+is ever handed to an addon.
 
 ## `[audio]`
 
@@ -101,19 +101,21 @@ the deployment. The host decides what is offered; what is heard is decided here.
 | `muted_addons` | list of strings | Addons whose sound this machine drops, each `author:addon`. |
 | `device` | string | The output to play through. Absent takes the machine's default. |
 
-`[audio.gain]` carries one multiplier per bus — `effects`, `footsteps`, `music`,
+`[audio.gain]` carries one multiplier per bus — `effects`, `environment`, `music`,
 `interface`, `voice` — each between `0.0` and `2.0`, absent meaning `1.0`. A value
 outside that range refuses to start and names the key.
 
 Turning `enabled` off, or a bus's gain to zero, is the guarantee. Muting an addon by
 name is a convenience: two addons that cooperate can play each other's sounds and get
-around it, which is why the category and global controls exist above it.
+around it, which is why the bus and global controls exist above it.
 
-`device` is the escape hatch, and you should not normally need it. The game asks the
-system for its default output; when that will not open — another program holding it,
-or a system whose default routes nowhere — it tries the sound server and then every
-other output, and logs the one it took. If that is the wrong one, the log also lists
-every name available, and any of them can go here.
+`device` is the escape hatch, and you should not normally need it. The game prefers a
+sound server that is already running, because a system's own default does not always
+route to it; failing that it takes the machine's default, and failing that every other
+output in turn. It logs the one it took either way. `default` is the one value that is
+not an output — it asks for whatever the game would have chosen on its own, which is how
+this key is undone. On Linux, [where this matters most](/start/linux/), the log is also
+where the names you could write instead appear.
 
 ## Overriding for one run
 

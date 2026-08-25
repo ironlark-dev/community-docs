@@ -53,10 +53,16 @@ Only useful if you are running your own, or reproducing a connectivity problem.
 
 | Flag | Effect |
 |---|---|
-| `--ice-servers` | comma-separated `stun:` / `turn:` / `turns:` URLs, replacing the fetched set |
+| `--ice-servers` | comma-separated `stun:` and `turn:` URLs, replacing the fetched set. A relay is reached over UDP only: `turns:`, and `turn:` with `?transport=tcp`, gather no candidate at all |
 | `--turn-username`, `--turn-password` | credentials for the TURN URLs above; meaningless without them, since a fetched set carries its own |
-| `--ice-transport-policy relay` | refuse every candidate except relay |
+| `--ice-transport-policy relay` | gather nothing but relay candidates, and refuse to start at all without a relay to use |
 
 `--ice-transport-policy relay` is the way to exercise the relay path from a network
 that would otherwise connect directly. It is a test tool: it makes a working direct
 connection fail on purpose.
+
+Two things to expect from it. Without a relay in the pool the session ends before it
+connects, naming no usable configuration — the flag is not only a filter. And the policy
+applies to the candidates this machine gathers, not to the ones it accepts, so a peer run
+this way still pairs against the other side's direct candidates. Run both ends for a real
+relay-only test.

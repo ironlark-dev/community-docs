@@ -33,9 +33,12 @@ list and you reorder startup.
 
 ## The baseline is always on
 
-`core` is enabled in every session and cannot be switched off, so a session always has
-a floor under it. You never need to list it — writing it changes nothing, and
-forgetting it costs nothing.
+`ironlark:core` is enabled in every session and cannot be switched off, so a session
+always has a floor under it. You never need to list it, and forgetting it costs nothing.
+
+Write it in full if you write it at all. Every entry is matched against the addon's whole
+`author:addon` id, and a name that matches nothing refuses the session by name — `core`
+alone is not an id, and a session listing it will not start.
 
 ## Three states, three intentions
 

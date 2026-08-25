@@ -32,7 +32,7 @@ solid = true                # blocks movement (default)
 Repeat the block per archetype. The full reference for the manifest is
 [`mod.toml`](/addons/mod-manifest/).
 
-Inside your own mod you spawn an archetype by its bare id — `spawn("zone", at)` — because a
+Inside your own mod you spawn an archetype by its bare id — `spawn("zone".into(), at)` — because a
 mod never writes its own identity. Written in full, for another addon to spawn, that same
 archetype is `<author>:<addon>:<mod>/archetype/zone`: for a mod at
 `workshop/tutorial/hello/mymode`, `tutorial:hello:mymode/archetype/zone`.
@@ -64,13 +64,14 @@ Both default to false, and both cost a collider per instance, so ask only for wh
 - `solid = false` — with `contact`, makes a pass-through trigger volume rather than an
   obstacle.
 
-For either event to reach you, the instance must be `identify`-ed after spawning. An
-unidentified instance is invisible to routing.
+Either event reaches you whether or not you named the instance. `identify` decides what
+`target` carries: your own name for it if you gave one, the bare archetype name if you
+did not. Name an instance when you need to tell it from its siblings.
 
 ## Scenes
 
 `scene` is a glTF/`.glb` beside `mod.toml`, authored however you like (Blender exports these
-directly). Its named nodes become addressable **parts**: `entity.part(&e, "cap")` resolves the
+directly). Its named nodes become addressable **parts**: `entity.part(&e, "cap".into())` resolves the
 node called `cap`, and the handle it returns reads and writes like any other.
 
 Two authoring rules worth knowing before you export:
@@ -100,9 +101,10 @@ kind are in [`mod.toml`](/addons/mod-manifest/).
 
 Shapes are how you make a real **volume**. The collider is solid, not a shell: a player
 standing fully inside a shape zone keeps one open touch — `on-contact` fires `started` once
-on entry and `ended` once on true exit, however long they stay. A `contact` zone that is not
-`interact` is also transparent to use-presses and raycasts, so an invisible zone enclosing a
-button does not swallow the press.
+on entry and `ended` once on true exit, however long they stay. A zone written
+`solid = false` is also transparent to use-presses and raycasts, so an invisible trigger
+enclosing a button does not swallow the press. `solid` defaults to `true`, and a solid
+zone occludes the ray whether or not it declares `interact` — that is the one to watch.
 
 Three things a scene has that a shape does not:
 

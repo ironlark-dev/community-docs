@@ -16,7 +16,7 @@ sidebar:
 | Signal payload | 64 KiB | `emit` returns an error |
 | Per-mod signal inbox | 64 pending | that delivery is shed, loudly |
 | Signals queued before mods finish loading | 256 | `emit` returns an error |
-| Memory per mod | 128 MiB by default; the operator can raise or lower it | growth past it ends the call and restarts your mod — see below |
+| Memory per mod | 128 MiB by default; the operator can raise or lower it | growth past it ends the call and takes your mod out for the session — see below |
 | Guest execution per call | 400 slices of ~5 ms | the call is ended and your mod restarted — see below |
 | Presses and touches queued per mod | 64 | stale presses are shed first; a whole touch pair is cancelled before either half is lost |
 | RPCs queued per mod | 32 | the caller is answered "overloaded" |

@@ -31,15 +31,16 @@ interface ui {
   set-overlay-text: func(text: string);
 }
 
-// One-shot sound playback (ADR 0045).
+// One-shot sound playback.
 //
-// `clip` follows the rule every name-taking import follows: a bare name is one
-// of the CALLER's own `[declares] audio-clips` and the host qualifies it to
-// `<caller>/audio-clip/<name>`; a name carrying `:` is another mod's, taken as
-// written. `category` is one of the host-published buses a mod may emit into:
-// "effects", "footsteps" or "music" — "interface" and "voice" are the host's
-// and are refused. `params` is a named-value list so it can grow without a
-// break; the one name read today is "volume", from 0.0 to 1.0 and clamped.
+// `sound` follows the rule every name-taking import follows: a bare name is one
+// of the CALLER's own `[declares] sounds` and the host qualifies it to
+// `<caller>/sound/<name>`; a name carrying `:` is another mod's, taken as
+// written. `bus` is one of the host-published buses a mod may emit into:
+// "effects", "environment", "music" or "interface". "voice" is the host's and
+// is refused, because a declared sound is not a voice. `params` is a
+// named-value list so it can grow without a break; the one name read today is
+// "volume", from 0.0 to 1.0 and clamped.
 //
 // In the server realm every participant hears it; in the client realm it is
 // this machine's alone. What is heard is still the listener's decision: a
@@ -47,10 +48,10 @@ interface ui {
 // the caller, because the same sound is playing for everyone who did not
 // silence it.
 interface audio {
-  play: async func(clip: string, category: string, params: list<tuple<string, f32>>) -> result<_, string>;
+  play: async func(sound: string, bus: string, params: list<tuple<string, f32>>) -> result<_, string>;
 }
 
-// The session roster (ADR 0040): the server-resolved facts about a
+// The session roster: the server-resolved facts about a
 // participant, as named string values. Read-only — the host owns the table,
 // fills it on join and drops the row on leave; mods never hold a copy.
 interface profile {
@@ -60,7 +61,7 @@ interface profile {
   get-all: async func(player-id: string) -> list<tuple<string, string>>;
 }
 
-// Server-realm entity verbs (ADR 0020/0021/0022). A body is just an entity a
+// Server-realm entity verbs. A body is just an entity a
 // controller drives; creation and control are separate. The verb set is fixed
 // and generic: capability grows by whitelisting components (data), never by
 // adding verbs.
@@ -76,28 +77,28 @@ interface entity {
   // own archetype declarations and the host qualifies it to
   // `<caller>/archetype/<name>`; a name carrying `:` is taken as written and
   // names another mod's — `ironlark:core:balloons/archetype/balloon`. Both
-  // resolve through the content registry (ADR 0011). A host-published name
+  // resolve through the content registry. A host-published name
   // carries no `:` at all — `character` spawns the built-in character body —
   // and the caller's own declaration is tried FIRST, so a name the host
   // publishes can never make a mod's archetype of that name unspawnable by its
   // author. Registry entities replicate to every peer automatically.
   //
   // What you spawn is YOURS: the host records you as its owner, and that is what
-  // every other verb here checks (ADR 0038). Spawning another mod's archetype
+  // every other verb here checks. Spawning another mod's archetype
   // places its content, not its behaviour — the instance is yours to move and
   // remove, while its touch and use events go to the mod that declared the
   // archetype and wrote the handlers for it.
   spawn: async func(archetype: string, at: spawn-transform) -> result<handle, string>;
 
   // Bind a player controller to a body: control is `Controller -> Body`, SEPARATE
-  // from creation (ADR 0021) — spawn an entity, THEN control it. `player` is a
+  // from creation — spawn an entity, THEN control it. `player` is a
   // player's user id. On the host: the own local player's body becomes the local
   // player (camera + input); a remote player's body becomes the host's authoritative
   // simulation body for that client — driven by its input and broadcast via
   // WorldSnapshot. Deferred hard domino: the remote client still spawns its own
   // predicted body rather than instantiating this host-controlled one.
   //
-  // Only the session's gamemode may possess (ADR 0038), and no configuration can
+  // Only the session's gamemode may possess, and no configuration can
   // grant this to anything else: binding a player to a body takes that player's
   // camera and input. The target must be a body; a body already possessed is
   // released first, so one body never carries two controllers.
@@ -165,9 +166,9 @@ interface entity {
   //
   // You may write an entity you spawned, and an instance of an archetype you
   // declare wherever it came from. A player's body only while you are handling an
-  // event about that player — the touch or press that reached you (ADR 0038) —
+  // event about that player — the touch or press that reached you —
   // or, for decoration rows alone, after declaring the row under `body-rows` in
-  // your manifest (ADR 0044): a declared row (e.g. "label") is writable on any
+  // your manifest: a declared row (e.g. "label") is writable on any
   // player's body, first write included, while pose, reads and despawn stay
   // out of reach. Anything else needs an operator's grant — and a grant
   // writes the components an entity carries, never attaches one.
@@ -238,14 +239,14 @@ interface entity {
   // how a content mod drives instances it did not spawn.
   find: async func(pattern: string) -> result<list<handle>, string>;
 
-  // Resolve a player's controlled body (the controller -> body relation,
-  // ADR 0021) to an entity handle. This is how a mechanic mod reaches the
+  // Resolve a player's controlled body (the controller -> body relation) to an
+  // entity handle. This is how a mechanic mod reaches the
   // player a hook handed it (on-contact, on-interact) to apply an effect —
   // teleport, launch — without the gamemode brokering every move.
   // Errors while the player controls no body.
   //
   // Call it with the player the event you are handling is about: what the handle
-  // permits is checked at each use, against that same player (ADR 0038). Holding
+  // permits is checked at each use, against that same player. Holding
   // the handle afterwards buys nothing, so there is no reason to keep one.
   //
   // A cosmetic write on a body does not reach other peers — the stand-in a client
@@ -254,7 +255,7 @@ interface entity {
   body-of: async func(player: string) -> result<handle, string>;
 }
 
-// Read-only spatial queries over the physical world (ADR 0026): the sensing
+// Read-only spatial queries over the physical world: the sensing
 // counterpart of contact events. Sees map colliders and flagged-entity
 // proxies (archetypes with `interact`/`contact`); character bodies are not
 // raycastable. A hit on another mod's entity reports geometry but no handle —
@@ -282,13 +283,13 @@ interface spatial {
   overlap: async func(center: vec3, radius: f32) -> list<handle>;
 }
 
-// The signal bus (ADR 0024): observe-only mod-to-mod events over host-routed
+// The signal bus: observe-only mod-to-mod events over host-routed
 // byte channels. Signals are facts, not decisions — no consume, no override,
 // subscriber order undefined; decision chains belong to the composition hook
-// layer (ADR 0013). Server realm only.
+// layer. Server realm only.
 //
 // A channel is declared in `mod.toml` under `[declares] channels`, and a mod
-// never writes its own id (ADR 0029): it says `pressed` and the host makes that
+// never writes its own id: it says `pressed` and the host makes that
 // `<caller>/channel/pressed`. A name carrying `:` is taken exactly as written
 // and names a channel the caller does not own — the one place a mod
 // legitimately writes an id it did not mint, and the reason ownership is NOT
@@ -297,10 +298,10 @@ interface spatial {
 //
 // Both halves must name a channel SOMEONE declared. `subscribe` used to accept
 // any string and return ok, so a renamed channel left a subscriber that never
-// fired and an emitter nobody heard, with nothing saying why; now each is
+// fired and a sender nobody heard, with nothing saying why; now each is
 // refused where it is written.
 interface signal {
-  // Fan `payload` out to every subscriber of `channel`, excluding the emitter
+  // Fan `payload` out to every subscriber of `channel`, excluding the sender
   // (no self-delivery — kills the trivial feedback loop). Delivery is reliable
   // in the normal case and sheds loudly per overloaded subscriber; it never
   // stalls the simulation. Emits fired while server mods are still loading are
@@ -362,22 +363,22 @@ interface server-api {
   // body to that point, the same measure the host's reach limit enforces.
   //
   // While this handler runs, `player-id` is the one player whose body this mod may
-  // reach (ADR 0038): resolve it with entity.body-of and act inside the handler.
+  // reach: resolve it with entity.body-of and act inside the handler.
   on-interact: async func(player-id: string, target: string, hit-point: vec3, distance: f32);
 
   // `method` is the bare name this mod declared: routing already established
   // whose method it is, and a mod never has to recognise its own full id.
   //
-  // A signal arrived on a channel this mod subscribed to (ADR 0024). `source`
+  // A signal arrived on a channel this mod subscribed to. `source`
   // is the emitting mod's full `<author>:<addon>:<mod>` id, stamped by the host
-  // rather than supplied by the emitter — unforgeable, so
+  // rather than supplied by the sender — unforgeable, so
   // policy ("only the gamemode commands me", "facts only from the protocol
   // owner") is one comparison. The payload carries everything the handler
-  // needs: a signal does not synchronize with the emitter's queued entity
+  // needs: a signal does not synchronize with the sender's queued entity
   // verbs, so "hear signal, then read the world" is an anti-pattern.
   on-signal: async func(channel: string, source: string, payload: list<u8>);
 
-  // What physically touched one of this mod's contact entities (ADR 0025) —
+  // What physically touched one of this mod's contact entities —
   // instance-exact, so "react only to THIS player / THAT balloon" is one
   // comparison in the handler.
   variant contact-party {
@@ -400,7 +401,7 @@ interface server-api {
   enum contact-edge { started, ended }
 
   // Physical touch on an instance of one of this mod's contact archetypes
-  // (declarations carrying `contact = true`, ADR 0025). Routed like `on-interact`:
+  // (declarations carrying `contact = true`). Routed like `on-interact`:
   // to the mod that declared the archetype, whoever spawned the instance, and
   // `target` is this mod's own name for it or the bare archetype name. When both
   // parties are contact entities, each declaring mod hears about its own. `point`
@@ -408,7 +409,7 @@ interface server-api {
   // separated to).
   //
   // When `other` is a player, that player is the one whose body this mod may
-  // reach while this handler runs (ADR 0038) — which is what a pad, a trap or a
+  // reach while this handler runs — which is what a pad, a trap or a
   // teleporter needs, and all it needs.
   on-contact: async func(target: string, other: contact-party, point: vec3, edge: contact-edge);
 }
@@ -430,7 +431,7 @@ interface client-api {
 
 // Host-owned gamemode/session settings a server-mod configures.
 interface gamemode {
-  // Toggle the host's default spawn-on-join (ADR 0014 free-roam baseline). ON by
+  // Toggle the host's default spawn-on-join (free-roam baseline). ON by
   // default. A gamemode that owns placement calls set-default-spawn(false) in init(),
   // then spawns via entity.spawn + entity.control from on-player-join.
   set-default-spawn: func(enabled: bool);

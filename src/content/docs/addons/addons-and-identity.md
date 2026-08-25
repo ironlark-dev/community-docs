@@ -25,7 +25,7 @@ workshop/
   ironlark/                        # an author
     core/                          # an addon
       addon.toml
-      badgrass/                    # a mod filling the map role
+      badgrass/                    # a mod shipping a map
       freeroam/                    # a mod filling the gamemode role
     examples/
       addon.toml
@@ -37,7 +37,7 @@ workshop/
 ```
 
 Three levels, always: author, addon, mod. `addon.toml` marks the addon root. There is no
-`mods/` or `maps/` directory — a map is a mod that fills the map role, so a new kind of
+`mods/` or `maps/` directory — a map is a mod that ships a `map.toml`, so a new kind of
 content is a role rather than another directory, and placement cannot forge what a piece
 of content is.
 
@@ -63,7 +63,7 @@ ironlark:core:buttons/channel/pressed         a signal channel
 ironlark:core:plates/entity/plate:main        one entity in the world
 ```
 
-The kinds are `archetype`, `channel`, `method`, `action`, `feature` and `entity`. Every
+The kinds are `archetype`, `channel`, `method`, `action`, `sound` and `entity`. Every
 one but `entity` is declared in `mod.toml` and checked when it is used, so a typo fails at
 load rather than going quiet. `entity` is the exception both ways: it is never declared,
 because a map's props are stamped at runtime in numbers no manifest could list, and it is
@@ -101,7 +101,8 @@ default map. It ships with the engine, is always enabled, and cannot be removed 
 disabled, so every install boots something playable with no downloads and no config.
 
 `ironlark`'s other addons are ordinary optional content — `ironlark:examples` is bundled
-for convenience, removable, and never enabled by default. A server opts into it exactly as
+for convenience and removable. Curating is opt-out: with no `addons` list at all,
+everything installed runs, including this one. A server names it exactly as
 it would for anyone else's.
 
 Which is why `ironlark:chat` and `ullanar:chat` can coexist, and swapping one

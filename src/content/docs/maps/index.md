@@ -13,18 +13,18 @@ are host-owned content; they run no code.
 
 ```text
 workshop/<author>/<addon>/<map>/
-  map.toml        # manifest: id, environment, spawn points
+  map.toml        # manifest: the glTF file, spawn points, environment
   <map>.glb       # geometry, materials, lights (glTF, from Blender)
 ```
 
 A map is addressed `author:addon:mod` (for example `ironlark:core:badgrass`) — a map is a
-mod that fills the map role, so it is named like any other.
+mod that ships a `map.toml`, so it is named like any other.
 
 ## The manifest (`map.toml`)
 
 ```toml
 [map]
-id = "arena"
+version = "1.0.0"
 gltf = "arena.glb"
 spawns = [                      # fallback spawn points; yaw in degrees
   { position = [0.0, 5.0, 12.0], yaw = 0.0 },

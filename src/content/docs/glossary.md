@@ -25,6 +25,12 @@ pedestal. Declared in `mod.toml` with a model to show for it; see
 An entity a player is currently driving. It is not a type: control is something an
 entity gains and loses — see [Entities and control](/build/entities-and-control/).
 
+## Bus
+
+One lane of the mixer, and one volume a listener controls: `effects`, `environment`,
+`music`, `interface`, `voice`. You name one every time you play a sound. `voice` is the
+host's — see [Playing a sound](/build/playing-sound/).
+
 ## Component
 
 A named piece of state on an entity, read and written through two generic verbs over a
@@ -58,6 +64,13 @@ See [Grants](/server/grants/).
 
 The player running the session. Everything authoritative happens there, and today it
 is a player rather than a dedicated machine — see [Run a server](/start/run-a-server/).
+
+## Handle
+
+An opaque reference to one entity, issued by the host and impossible to forge. It is
+ephemeral: spent when you despawn the entity, and gone when your mod reloads. To reach the
+same entity later, give it a name with `identify` and look it up with `find` — see
+[Entities and control](/build/entities-and-control/).
 
 ## Label
 
@@ -93,6 +106,12 @@ The mod that spawned an entity. It is recorded by the host, not claimed by the m
 it is what every verb checks before touching that entity — see
 [who may act on an entity](/build/entity-ownership/).
 
+## Part
+
+One node inside a spawned scene, addressed by its path from the root — `"cap"`, or
+`"arm/hand"`. Only nodes the model author named are reachable, and `part("")` is the root
+itself.
+
 ## Realm
 
 Which side a piece of a mod runs on: the authoritative server, or a player's client.
@@ -104,6 +123,12 @@ The two have different powers — see
 A byte payload one mod sends on a named channel that other mods observe. Signals are
 facts, not commands: nobody can consume or override one — see [Signals](/build/signals/).
 
+## Sound
+
+A short audio file an addon ships and declares, played through a bus. One declaration
+covers a click and a longer piece; where the bytes live while it plays is the engine's
+business — see [Playing a sound](/build/playing-sound/).
+
 ## User id
 
 The id of an account. It is also the thing a session is addressed by: you join a host
@@ -112,6 +137,6 @@ type — see [Run a server](/start/run-a-server/).
 
 ## Workshop
 
-The directory installed content lives in, `workshop/<namespace>[/<addon>]/`. Its layout
-is what gives every addon its identity — see
+The directory installed content lives in, `workshop/<author>/<addon>/<mod>/`. The depth is
+fixed at three, and the layout is what gives every addon and every mod its identity — see
 [Addons and identity](/addons/addons-and-identity/).

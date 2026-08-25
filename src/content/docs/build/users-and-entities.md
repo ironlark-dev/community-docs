@@ -65,9 +65,11 @@ release(entity)           // stop; the entity stays in the world, uncontrolled
 
 The parameter is called `player` and takes a user id.
 
-One controller drives one entity in every shipped mod. The engine does not forbid
-holding a second, but nothing ships that way, so treat it as unexplored rather than
-as a supported pattern.
+One controller drives one entity in every shipped mod, and you should keep it that way.
+Binding a player to a second body does not release the first: both keep the marker that
+says whose body they are, and the host can then no longer answer which body is that
+player's — `body-of` and every event that resolves a subject go wrong together. Release
+the old one first.
 
 **There is no AI controller.** Handing an entity to a computer-driven controller is
 described in the design but does not exist, so "release it and let the AI take over"

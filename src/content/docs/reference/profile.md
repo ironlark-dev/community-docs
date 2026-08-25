@@ -10,6 +10,8 @@ sidebar:
 From `host.wit`. Edit the WIT, not this page.
 :::
 
+Imported by both halves of a mod.
+
 The session roster: the server-resolved facts about a participant, as named
 string values. Available in both worlds. Read-only — the host owns the table,
 fills it when a player joins and drops the row when they leave; your mod never
