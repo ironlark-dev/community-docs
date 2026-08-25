@@ -153,7 +153,7 @@ to name itself. Three levels, always: author, addon, mod. Use your own handle in
    [profile.release]
    opt-level = "z"
    lto = true
-   strip = true
+   strip = "debuginfo"
    ```
 
 6. **The server crate** — `server/Cargo.toml`
@@ -327,6 +327,11 @@ cp target/wasm32-wasip2/release/balloon_server.wasm .
   </TabItem>
 </Tabs>
 
+`--content` **replaces** the install's own content rather than adding to it, so the
+root you point at has to hold the engine's addons as well — copy `assets/workshop/ironlark`
+into it once. Without them a session has no baseline, no map and no gamemode, and ends
+before you see anything.
+
 Starting the game yourself also means supplying the endpoints it would have got from
 the launcher — see [Command line](/reference/command-line/). Hosting through the
 launcher works too; `--content` is the only reason to use a terminal here.
@@ -439,5 +444,5 @@ More in [Troubleshooting a mod](/build/troubleshooting/).
 
 - [Write your first gamemode](/start/first-gamemode/) — owning the rules of a session, including where players appear
 - [Archetypes](/addons/archetypes/) — making things pressable, touchable, or walk-through
-- [Playing a sound](/build/playing-sound/) — ship a clip with your addon and play it in one call
+- [Playing a sound](/build/playing-sound/) — ship a sound with your addon and play it in one call
 - [The boundary today](/boundary/) — what the engine cannot do yet, before you design something that needs it
