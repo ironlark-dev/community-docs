@@ -1,22 +1,22 @@
 ---
+title: "Granting authority over other mods' entities"
+description: "Mods own what they create. A grant is how a cleanup or moderation mod reaches what it did not create."
 kind: how-to
 area: server
-title: "Granting authority over other addons' entities"
-description: "Addons own what they create. A grant is how a cleanup or moderation addon reaches what it did not create."
 sidebar:
   label: "Grants"
-  order: 40
+  order: 5
 ---
 
 import { Aside } from '@astrojs/starlight/components'
 
-An addon can act on the entities it created, and on instances of archetypes it ships.
-It cannot touch another addon's entities. That default is what stops a decoration
-addon from moving your players around, and it needs no configuration from you.
+A mod can act on the entities it created, and on instances of archetypes it ships.
+It cannot touch another mod's entities. That default is what stops a decoration mod
+from moving your props around, and it needs no configuration from you.
 
-Some addons legitimately need more: a round janitor that clears props at the end of a
+Some mods legitimately need more: a round janitor that clears props at the end of a
 match, or a moderation tool that removes one griefer's prop. Those act on entities
-whose creators have never heard of them, so no addon can arrange it between
+whose creators have never heard of them, so no two mods can arrange it between
 themselves — you decide it, in `config/server.toml`.
 
 If you run none of those, you never touch this page.
@@ -25,86 +25,90 @@ If you run none of those, you never touch this page.
 
 ```toml
 [[grants.rule]]
-to    = "acme:janitor:props"
+to    = "acme:janitor"
 verbs = ["read", "remove"]
 over  = "owner:*"
 ```
 
-That addon may now look at and remove any entity any addon created, for this session.
+That mod may now look at and remove any entity any mod created, for this session.
 
 Three fields, and all three are required:
 
 | Field | Means |
 |---|---|
-| `to` | The mod this is granted to, written in full: author, addon, mod. |
+| `to` | The mod this is granted to, by its full `author:mod` id. |
 | `verbs` | What it may do: any of `read`, `write`, `remove`. |
-| `over` | Whose entities: `owner:*` for every addon's, or `owner:<author>:<addon>:<mod>` for one addon's. |
+| `over` | Whose entities: `owner:*` for every mod's, or `owner:<author:mod>` for one mod's. |
 
-`to` names a **mod**, not an addon. Authority is exercised by running code, and an
-addon-wide grant would hand every mod inside it whatever one of them needed.
+The granularity is the mod, because authority is exercised by running code, and
+anything coarser would hand a whole suite whatever its author needed for one member
+of it.
 
 ## The three verbs
 
-| Verb | Lets the addon |
+| Verb | Lets the mod |
 |---|---|
-| `read` | Look at another addon's entities — read their components, resolve their parts. |
+| `read` | Look at another mod's entities — read their components, resolve their parts. |
 | `write` | Change them: move them, recolour them. |
 | `remove` | Delete them. |
 
-They are separate because the addons that need them need different ones. A janitor
-needs `remove` and nothing else. Grant the narrowest set that makes the addon work.
+They are separate because the mods that need them need different ones. A janitor
+needs `remove` and little else. Grant the narrowest set that makes the mod work.
 
 <Aside type="caution" title="read and remove are not interchangeable">
-A cleanup addon granted only `read` will find every prop and delete none of them,
-and it may not say so clearly. If a janitor appears to do nothing, check that its
-row lists `remove`.
+A cleanup mod granted only `read` will find every prop and delete none of them, and
+it may not say so clearly. If a janitor appears to do nothing, check that its row
+lists `remove`.
 </Aside>
 
 ## Narrowing it
 
-`owner:*` covers every addon's entities. To confine a grant to one addon's, name it:
+`owner:*` covers every mod's entities. To confine a grant to one mod's, name that
+mod after the `owner:` prefix:
 
 ```toml
 [[grants.rule]]
-to    = "acme:janitor:props"
+to    = "acme:janitor"
 verbs = ["remove"]
-over  = "owner:you:props:place"
+over  = "owner:bree:props"
 ```
 
-There is no exclusion list — no way to say "everything except". One row's effect would
-then depend on rows elsewhere in the file, and any addon installed later would fall
-outside everybody's exclusions and be quietly reachable. Listing the addons you mean
-is more typing and says what it does.
+There is no exclusion list — no way to say "everything except". One row's effect
+would then depend on rows elsewhere in the file, and any mod installed later would
+fall outside everybody's exclusions and be quietly reachable. Listing the owners you
+mean is more typing and says what it does.
 
 ## What a grant can never do
 
 - **Reach a player's body.** No grant moves, reads or deletes one, whatever it says.
-  The widest row you can write does not touch players. The one thing a body takes —
-  decoration rows such as `label` — is not a grant at all: the addon declares the row
-  in its own manifest, and enabling the addon is the permission. See
-  [Decorating players](/build/body-decoration/).
-- **Take a player over.** Possession belongs to the session's gamemode alone; there is
-  no setting for it.
-- **Rename another addon's entities**, or reach map geometry and the bodies the server
-  places itself, which belong to nobody.
+  The widest row you can write does not touch players, and there is no scope word
+  for bodies to write at all. The one thing a body takes — decoration rows such as a
+  label — is not a grant: the mod declares the row in its own
+  [manifest](/modding/mod/manifest/), and enabling the mod is the permission.
+- **Take a player over.** Possession belongs to the session's gamemode alone; there
+  is no setting for it.
+- **Rename another mod's entities.** Naming is not in the grant vocabulary, so no
+  row can produce it.
 
 ## The gamemode already has one
 
-The mod holding the gamemode role may read and remove any addon's entities without a
-row, because clearing the field at the end of a round is the session's own business.
-It is never granted `write`, so it can clear another addon's props but not silently
-rewrite them.
+The mod holding the gamemode role may read and remove any mod's entities without a
+row, because clearing the field at the end of a round is the session's own business,
+and holding the role is already your decision — `[session] gamemode`, or being the
+only candidate. It is never granted `write`, so it can clear another mod's props but
+not silently rewrite them.
 
 Swapping which mod is the gamemode moves that authority with it, so there is nothing
 to keep in step.
 
 ## Checking it
 
-The server states the policy it resolved at start. In `logs/host.log`:
+The server states the policy it resolved at session start, one line per grant with
+the row it came from. In `logs/host.log`:
 
 ```
-grant: 'acme:janitor:props' may read,remove over owner:* (from row 1)
-grant: 'ironlark:core:freeroam' may read,remove over owner:* (from the gamemode role)
+grant: 'acme:janitor' may read,remove over owner:* (from row 1)
+grant: 'ironlark:freeroam' may read,remove over owner:* (from the gamemode role)
 grant: no grant moves, reads, names or destroys a player's body — a body takes only declared decoration rows, and possession is the gamemode's alone
 ```
 
@@ -114,23 +118,29 @@ With no `[grants]` section at all:
 grants: none; no mod may touch another mod's entities
 ```
 
-Every refused call is logged too, naming who asked, whose entity it was, and what was
-missing — so an addon that swallows its own errors cannot hide the problem from you.
+Every refused call is logged too, naming who asked, whose entity it was, and what
+was missing — so a mod that swallows its own errors cannot hide the problem from
+you.
 
 ## When it goes wrong
 
+Rows are numbered as you count them, so every message names the row you would edit.
+
 | What you see | Cause |
 |---|---|
-| The session refuses to start, naming a row | That row is malformed — usually `over`. The message states the forms it accepts. |
-| `row N names '<mod>', which this session does not run` | The row is ignored. Either the addon is not enabled, or the id is wrong — check it against the log's list of loaded mods. |
-| An addon reports refusals you expected the grant to cover | Compare the verb in the refusal against the row's `verbs`, and the owner against `over`. |
+| `[grants] row 1, over: 'bree:props' is not a scope; write 'owner:*' for every mod's entities, or 'owner:<author:mod>' for one mod's` | The `over` field is malformed — here, a missing `owner:` prefix. The session refuses to start. |
+| `[grants] row 1 grants 'acme:janitor' nothing; give it verbs or delete the row` | `verbs` is empty. The session refuses to start. |
+| `[grants] row 2 names 'acme:janitor', which this session does not run; the row is ignored` | A warning, not a refusal: the row is dropped for this session. Either the mod is not enabled, or the id is wrong — check it against the session's load-order line. |
+| A mod reports refusals you expected the grant to cover | Compare the verb in the refusal against the row's `verbs`, and the owner against `over`. |
 
-A malformed row stops the session on purpose. Starting with a policy you did not write
-is worse than not starting: a janitor you believe is running and is not gets noticed a
-week later, by which time the map is full.
+A malformed row stops the session on purpose. Starting with a policy you did not
+write is worse than not starting: a janitor you believe is running and is not gets
+noticed a week later, by which time the map is full. A row naming a mod that is not
+running is only a warning, so disabling one mod never forces an edit to a second
+section.
 
 ## Changing it
 
 Grants resolve when a session starts, so edit the file and host again. They do not
-change mid-session — an addon that lost `remove` halfway through a sweep would leave
+change mid-session — a mod that lost `remove` halfway through a sweep would leave
 the field half cleared.

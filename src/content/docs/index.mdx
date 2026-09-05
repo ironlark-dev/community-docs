@@ -9,8 +9,8 @@ hero:
       link: /start/run-a-server/
       icon: right-arrow
       variant: primary
-    - text: Make your first thing
-      link: /start/first-balloon/
+    - text: Write your first mod
+      link: /modding/first-mod/
       icon: rocket
       variant: minimal
 ---
@@ -20,9 +20,11 @@ import { CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
 ## Where Ironlark is
 
 Ironlark is in closed pre-alpha. The host runs, maps load, mods run, and people play
-on it. Large parts of the platform are not built yet: there is no dedicated server and
-no SDK, you host by running the game, and in practice you write mods in Rust against
-the raw interface.
+on it. Large parts of the platform are not built yet: there is no dedicated server,
+and you host by running the game. Mods are written in Rust with the `ironlark` SDK —
+public and Apache-2.0, at
+[github.com/ironlark-dev/ironlark-rust](https://github.com/ironlark-dev/ironlark-rust)
+— and [your first mod](/modding/first-mod/) is a git dependency away.
 
 These docs describe what exists today and say plainly where the edge is. Both lists
 are public: [the boundary today](/boundary/), and [the roadmap](/roadmap/).
@@ -30,12 +32,12 @@ are public: [the boundary today](/boundary/), and [the roadmap](/roadmap/).
 ## What do you want to do
 
 <CardGrid>
+  <LinkCard title="Get started" href="/start/"
+    description="Install the game, get it running on Linux, and host a session somebody has joined." />
   <LinkCard title="Run a server" href="/server/"
-    description="Host a session, decide what it runs, and work out why somebody cannot join. Start here if you want to play with people." />
-  <LinkCard title="Make something" href="/build/"
-    description="Put an object in the world, write the rules of a session, author a map. Start here if you want to build." />
-  <LinkCard title="Understand how it works" href="/build/realms-and-lifecycle/"
-    description="Realms, entities, identity, and the shape of the platform underneath all of it." />
+    description="Decide what a session runs, grant authority, and work out why somebody cannot join." />
+  <LinkCard title="Make something" href="/modding/"
+    description="Write a mod: put an object in the world, write the rules of a session, author a map." />
   <LinkCard title="Look something up" href="/reference/"
     description="Every function the host offers a mod, and every function a mod must export." />
 </CardGrid>
@@ -59,10 +61,10 @@ are public: [the boundary today](/boundary/), and [the roadmap](/roadmap/).
 <CardGrid>
   <LinkCard title="Run a server" href="/start/run-a-server/"
     description="Nothing to a session somebody has joined. No port to forward." />
-  <LinkCard title="Make your first thing" href="/start/first-balloon/"
+  <LinkCard title="Write your first mod" href="/modding/first-mod/"
     description="An object in the world that moves, from an empty directory." />
   <LinkCard title="The boundary today" href="/boundary/"
     description="What the engine cannot do yet, and what works instead. Read it before designing." />
   <LinkCard title="Glossary" href="/glossary/"
-    description="Mod, addon, gamemode, archetype, realm — one sentence each." />
+    description="Mod, gamemode, archetype, realm, signal — one or two sentences each." />
 </CardGrid>

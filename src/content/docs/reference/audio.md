@@ -2,54 +2,54 @@
 kind: reference
 area: reference
 title: "audio"
+description: "One-shot sound playback on a named bus: server realm plays for every participant, client realm for this machine alone."
 sidebar:
-  order: 100
+  order: 160
 ---
 
-:::note[Generated]
-From `host.wit`. Edit the WIT, not this page.
-:::
+Part of the host contract in [`host.wit`](/host.wit). One-shot playback of a
+declared sound: the server realm plays for every participant, the client realm
+for this machine alone — the same call, reaching as far as the realm it was
+made in. A muted mod, silenced bus or full bus drops the sound without telling
+the caller. How sounds ship and are declared is
+[Sound](/modding/presentation/sound/).
 
-## Functions
+Imported by both worlds: `server-mod` and `client-mod`.
 
-| Function | Summary |
-|---|---|
-| [`play`](#play) | Plays one of your declared sounds on a bus. |
-
-### `play`
+## `play`
 
 ```wit
-play: async func(sound: string, bus: string, params: list<tuple<string, f32>>) -> result<_, string>;
+enum bus { effects, environment, music, %interface }
 ```
 
-Plays a sound once. Imported in both realms: called from your server half every
-participant hears it, called from your client half it is that machine's alone.
+The mixing lanes a mod may play on. The host's voice lane is absent on
+purpose: the host writes voice, a mod does not, and voice arrives as its own
+verb rather than as a case here.
 
-`sound` follows the rule every name-taking import follows. A bare name is one of
-your own `[declares] sounds` and the host qualifies it to
-`<caller>/sound/<name>`; a name carrying `:` is another mod's, taken as
-written.
+```wit
+play: async func(sound: sound-id, bus: bus, params: list<tuple<string, field-value>>) -> result<_, error>;
+```
 
-`bus` is where the sound is heard, and must be one of `effects`, `environment`,
-`music` or `interface`. The `voice` bus belongs to the host and is refused:
-grief noise must not be able to wear the voice label, and a sound you ship is
-not a voice.
+Plays the resolved sound on `bus`. The id comes from
+[resolve.sound](/reference/resolve/#sound). `params` is a growable list of
+named [field-value](/reference/types/#field-value) values; the host reads one
+param, `"volume"`: a number, `0.0..=1.0`, clamped, `1.0` when the call names
+none. A param name the host does not read is ignored, which is what lets the
+list grow.
 
-`params` is a named-value list so it can grow without breaking a compiled mod.
-One name is read today:
+Refuses, as the [error record](/reference/types/#error):
 
-| Name | Range | Absent means |
-|---|---|---|
-| `volume` | 0.0 to 1.0, clamped | 1.0 |
+- a forged, stale or undeclared sound id;
+- a param whose value is not a number — a shape audio cannot apply is a
+  refusal, never a silent drop;
+- `"volume"` named more than once, or given a value that is not a finite
+  number;
+- a caller past its per-mod play rate — the quota refuses rather than queueing.
 
-A name the host does not read is ignored. Naming `volume` twice is refused, and
-so is a value that is not a number.
+Success means the host admitted the play, not that anyone heard it: a muted
+mod, a silenced bus or a full bus drops it silently by the listener's right.
 
-Refused when the bus is one you may not emit into, when the sound resolves
-to nothing, when the volume is malformed, or when you are past your allowance —
-eight sounds at once and four a second sustained, with a refusal carrying the
-token `audio-quota:`.
+## Related
 
-`Ok` means the host accepted the sound and put it on the wire. It does not mean
-anyone heard it: each listening machine applies its own gates, and a muted addon
-or a silenced bus drops the sound without telling you.
+- [Sound](/modding/presentation/sound/) — shipping and declaring sounds
+- [resolve](/reference/resolve/#sound) — names to ids

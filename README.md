@@ -80,5 +80,7 @@ build and the link check; it does not publish. Publishing happens when a change 
 
 ## Licence
 
-Documentation text is © the Ironlark project. `public/host.wit` is published so anyone
-can see the interface a mod is built against, and build one without asking us for a file.
+Apache-2.0, over the prose and over every code sample in it. Copy a sample into your own
+mod and ship it; you owe nothing back. `public/host.wit` is published for the same
+reason: anyone can see the interface a mod is built against, and build one without
+asking us for a file.

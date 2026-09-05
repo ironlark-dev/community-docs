@@ -8,9 +8,9 @@ sidebar:
 
 import { CardGrid, LinkCard, Aside } from '@astrojs/starlight/components';
 
-Generated from `host.wit`, the contract a mod compiles against — so a page here says
-what the running host actually offers, not what it offered when someone last wrote
-about it.
+One page per interface of `host.wit`, the contract a mod compiles against —
+so a page here says what the running host actually offers, not what it
+offered when someone last wrote about it.
 
 <Aside type="caution" title="Keep your copy fresh">
 A mod vendors its own copy of the contract. When a page here and your copy disagree,
@@ -26,28 +26,53 @@ your copy is stale — [download the current one](/host.wit).
     description="Every key an instance's configuration file may carry." />
 </CardGrid>
 
-## Exported — you implement these, the host calls them
+## The shared vocabulary
 
 <CardGrid>
-  <LinkCard title="server-api" href="/reference/server-api/"
-    description="The server half of a mod: init, update, joins, signals, contacts, interaction." />
-  <LinkCard title="client-api" href="/reference/client-api/"
-    description="The client half: init, input, and messages from your server half." />
+  <LinkCard title="types" href="/reference/types/"
+    description="The wire error, the id aliases, cause and context, and the field value set every interface builds on." />
 </CardGrid>
 
 ## Imported — the host offers these, you call them
 
 <CardGrid>
-  <LinkCard title="entity" href="/reference/entity/" description="Spawn, despawn, read and write components, possess and release." />
-  <LinkCard title="Component rows" href="/reference/components/" description="Every readable and writable component: fields, value kinds, defaults, per-row properties." />
-  <LinkCard title="spatial" href="/reference/spatial/" description="Raycasts and overlap queries." />
-  <LinkCard title="signal" href="/reference/signal/" description="Emit and subscribe on the mod-to-mod bus." />
-  <LinkCard title="broadcast" href="/reference/broadcast/" description="Send to every client, or to one." />
-  <LinkCard title="rpc-out" href="/reference/rpc-out/" description="Call from a client half into your server half." />
-  <LinkCard title="map-api" href="/reference/map-api/" description="Read what the loaded map declares." />
-  <LinkCard title="gamemode" href="/reference/gamemode/" description="What the designated gamemode may switch off." />
-  <LinkCard title="ui" href="/reference/ui/" description="The overlay surface a client half can write to." />
-  <LinkCard title="audio" href="/reference/audio/" description="Play a sound your addon ships, on a bus the listener controls." />
-  <LinkCard title="profile" href="/reference/profile/" description="The session roster: display names and other server-stated player facts." />
-  <LinkCard title="log" href="/reference/log/" description="Write to the host log." />
+  <LinkCard title="event" href="/reference/event/"
+    description="What a hook may ask about the event it is handling: cause and instance token." />
+  <LinkCard title="resolve" href="/reference/resolve/"
+    description="Names become compact ids at init: signals, requests, sounds, components, fields, mods." />
+  <LinkCard title="player" href="/reference/player/"
+    description="The participant resource a server hook is lent: account, persona, session id, body." />
+  <LinkCard title="log" href="/reference/log/"
+    description="Write to the host log, attributed and budgeted." />
+  <LinkCard title="signal" href="/reference/signal/"
+    description="Raise a declared name to whoever subscribed; subscribe to hear future raises." />
+  <LinkCard title="signal-to" href="/reference/signal-to/"
+    description="The same raise, delivered to one participant's machine." />
+  <LinkCard title="request" href="/reference/request/"
+    description="The one awaited verb: ask your server half and receive its answer." />
+  <LinkCard title="entity" href="/reference/entity/"
+    description="Spawn and despawn, control and release, component reads and writes, ids and lookup." />
+  <LinkCard title="Component rows" href="/reference/components/"
+    description="Every readable and writable component: fields, value kinds, defaults, per-row properties." />
+  <LinkCard title="spatial" href="/reference/spatial/"
+    description="Raycasts and shape intersection queries." />
+  <LinkCard title="map-api" href="/reference/map-api/"
+    description="Read what the loaded map declares: its spawn points." />
+  <LinkCard title="spawn" href="/reference/spawn/"
+    description="The host's placement of arrivals, turned on or off by the gamemode." />
+  <LinkCard title="ui" href="/reference/ui/"
+    description="The overlay line a client half can write." />
+  <LinkCard title="audio" href="/reference/audio/"
+    description="Play a declared sound on a bus the listener controls." />
+  <LinkCard title="session" href="/reference/session/"
+    description="Who is connected, and the display name the session states for each." />
+</CardGrid>
+
+## Exported — you implement these, the host calls them
+
+<CardGrid>
+  <LinkCard title="server-api" href="/reference/server-api/"
+    description="The server half: init, ticks, joins and leaves, interaction, contact, requests, signals." />
+  <LinkCard title="client-api" href="/reference/client-api/"
+    description="The client half: init, the client tick, subscribed signals, input edges." />
 </CardGrid>

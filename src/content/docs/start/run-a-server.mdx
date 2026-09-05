@@ -2,7 +2,7 @@
 title: "Run a server"
 description: "From nothing to a session your friend has joined. What hosting means today, why there is no port to forward, and how to tell a working session from a broken one."
 kind: tutorial
-area: server
+area: start
 sidebar:
   order: 2
 ---
@@ -14,7 +14,7 @@ By the end of this you will have a session running and somebody else standing in
 ## What you get, and what you do not
 
 **Works today:** you host by running the game yourself, with `--become-host`. Other
-players connect to you. You choose the map, the addons and the gamemode.
+players connect to you. You choose the map, the mods and the gamemode.
 
 **Not yet:** a dedicated server — a host with nobody attached, that you start on a
 machine and leave running. It is not built.
@@ -28,15 +28,16 @@ If you have run a Minecraft or Valheim server, stop before you open your router.
 
 Ironlark connects players peer-to-peer over WebRTC. There is no listening port: a
 fresh port is negotiated per player, and when a direct path cannot be found, traffic
-goes through a relay the game fetches for you. Nothing to forward, nothing to open, no
-firewall rule to write.
+goes through a relay the game fetches for you. Nothing to forward, nothing to open,
+no firewall rule to write.
 
 It is also why players do not connect to an address. They connect to **you**.
 </Aside>
 
 ## Before you start
 
-- The game, installed and able to log in. Hosting uses your account.
+- The game, [installed](/start/install/) and able to log in. Hosting uses your
+  account.
 - One friend with the game, who can also log in.
 - Both of you on the same version. A version mismatch is refused, and says so.
 
@@ -46,10 +47,10 @@ It is also why players do not connect to an address. They connect to **you**.
 
 1. **Start it**
 
-   From the launcher: pick **Host**, choose a map, and launch. That is the whole step —
-   the launcher knows which servers to talk to and signs you in.
+   From the launcher: pick **Host**, choose a map, and launch. That is the whole
+   step — the launcher knows which servers to talk to and signs you in.
 
-   The map is a content id, `author:addon:mod`. `ironlark:core:badgrass` ships with the game.
+   The map is a mod id, `author:mod`. `ironlark:badgrass` ships with the game.
    Leave it unset and the session takes whatever the configuration selects, or the
    default.
 
@@ -71,8 +72,8 @@ It is also why players do not connect to an address. They connect to **you**.
    INFO Starting host session: user=af74f667-…, name=Alice
    ```
 
-   Logs are `logs/host.log` and `logs/client.log`, beside the install. Send your friend
-   that user id.
+   Logs are `logs/host.log` and `logs/client.log`, beside the install. Send your
+   friend that user id.
 
    The `name` beside it is what other players see you called. It comes from your
    account rather than from anything you pass on the command line, so a joining
@@ -103,16 +104,16 @@ host is never told it. Go to
 
 ## Starting the game yourself
 
-You can run the binary directly, but then you supply what the launcher was supplying:
-the three endpoints, and a way to sign in. Every default is `127.0.0.1`, so a bare
-invocation looks for a backend on your own machine and does not find one.
+You can run the binary directly, but then you supply what the launcher was
+supplying: the three endpoints, and a way to sign in. Every default is `127.0.0.1`,
+so a bare invocation looks for a backend on your own machine and does not find one.
 
 <Tabs syncKey="os">
   <TabItem label="Windows">
 
 ```powershell
 .\ironlark-game.exe -c <core server> -i <sign-in server> -s <signalling websocket> `
-  --become-host --map ironlark:core:badgrass
+  --become-host --map ironlark:badgrass
 ```
 
   </TabItem>
@@ -120,7 +121,7 @@ invocation looks for a backend on your own machine and does not find one.
 
 ```sh
 ./ironlark-game -c <core server> -i <sign-in server> -s <signalling websocket> \
-  --become-host --map ironlark:core:badgrass
+  --become-host --map ironlark:badgrass
 ```
 
   </TabItem>
@@ -137,27 +138,27 @@ beside the install:
 
 ```toml
 [session]
-addons = ["ironlark:examples"]
-gamemode = "ironlark:core:freeroam"
-map = "ironlark:core:badgrass"
+mods = ["ironlark:echo"]
+gamemode = "ironlark:freeroam"
+map = "ironlark:badgrass"
 ```
 
-Three things worth knowing now:
+Every id is two segments, `author:mod`. Three things worth knowing now:
 
-- **Leaving `addons` out is not the same as writing `addons = []`.** Out means nobody
-  has curated this install and everything installed runs. Empty means you chose to run
-  the baseline alone.
-- **Every player needs the addons the session runs.** A player missing one is refused,
+- **Leaving `mods` out is not the same as writing `mods = []`.** Out means nobody
+  has curated this install and everything installed runs. Empty means you chose to
+  run the baseline alone.
+- **Every player needs the mods the session runs.** A player missing one is refused,
   and told which.
 - **If two installed mods can be the gamemode and you name none, the session refuses
-  to start** and lists them. That is deliberate — guessing which rules to run is worse
-  than stopping.
+  to start** and lists them. That is deliberate — guessing which rules to run is
+  worse than stopping.
 
 Full detail: [Configuration](/server/configuration/) and
-[Choosing addons](/server/enabled-addons/).
+[Enabled mods](/server/enabled-mods/).
 
 ## Next
 
-- [Choosing addons](/server/enabled-addons/) — what runs, and what every player must have
+- [Enabled mods](/server/enabled-mods/) — what runs, in what order, and what every player must have
 - [Connectivity](/server/connectivity/) — what happens when a direct connection fails
 - [Diagnose a failed join](/server/diagnose-a-failed-join/) — symptom to cause to fix

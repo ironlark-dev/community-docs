@@ -10,13 +10,22 @@ import { join, relative } from 'node:path'
 
 const ROOT = 'src/content/docs'
 
-/** Areas in sidebar order, with the label each gets as a group. */
+/** Areas in sidebar order. `subdirs` nests one group per child directory,
+ * in the stated order, below the area's own root pages. */
 const AREAS = [
   { dir: 'start', label: 'Start here' },
   { dir: 'server', label: 'Running a server' },
-  { dir: 'build', label: 'Making things' },
-  { dir: 'addons', label: 'Addons' },
-  { dir: 'maps', label: 'Maps' },
+  {
+    dir: 'modding',
+    label: 'Modding',
+    subdirs: [
+      ['mod', 'The mod'],
+      ['world', 'The world'],
+      ['messaging', 'Messaging'],
+      ['presentation', 'Presentation'],
+      ['maps', 'Maps'],
+    ],
+  },
 ]
 
 /** Kinds in reading order, with the sub-group label each gets. */
@@ -77,6 +86,25 @@ const link = (p) => ({
   ...(p.state ? { badge: { text: p.state, variant: 'caution' } } : {}),
 })
 
+/** The hub leads its own group; large flat lists split by kind. */
+function arrange(own, dir) {
+  const hub = own.find((p) => p.slug === dir)
+  const rest = own.filter((p) => p !== hub).sort(byOrderThenLabel)
+  const items = hub ? [link(hub)] : []
+
+  if (rest.length > SUBGROUP_ABOVE) {
+    for (const [kind, kindLabel] of KINDS) {
+      const of = rest.filter((p) => p.kind === kind)
+      if (of.length > 0) items.push({ label: kindLabel, items: of.map(link) })
+    }
+    const unclassified = rest.filter((p) => !KINDS.some(([k]) => k === p.kind))
+    items.push(...unclassified.map(link))
+  } else {
+    items.push(...rest.map(link))
+  }
+  return items
+}
+
 export function sidebar() {
   const all = pages(ROOT)
   const groups = []
@@ -85,22 +113,20 @@ export function sidebar() {
     const own = all.filter((p) => p.slug === area.dir || p.slug.startsWith(`${area.dir}/`))
     if (own.length === 0) continue
 
-    // The hub leads its own group and is never sorted in with the pages under it.
-    const hub = own.find((p) => p.slug === area.dir)
-    const rest = own.filter((p) => p !== hub).sort(byOrderThenLabel)
-    const items = hub ? [link(hub)] : []
-
-    if (rest.length > SUBGROUP_ABOVE) {
-      for (const [kind, kindLabel] of KINDS) {
-        const of = rest.filter((p) => p.kind === kind)
-        if (of.length > 0) items.push({ label: kindLabel, items: of.map(link) })
-      }
-      const unclassified = rest.filter((p) => !KINDS.some(([k]) => k === p.kind))
-      items.push(...unclassified.map(link))
-    } else {
-      items.push(...rest.map(link))
+    if (!area.subdirs) {
+      groups.push({ label: area.label, items: arrange(own, area.dir) })
+      continue
     }
 
+    // Root pages lead; each declared child directory nests as its own group.
+    const roots = own.filter((p) => !p.slug.slice(area.dir.length + 1).includes('/'))
+    const items = arrange(roots, area.dir)
+    for (const [sub, subLabel] of area.subdirs) {
+      const dir = `${area.dir}/${sub}`
+      const inside = own.filter((p) => p.slug === dir || p.slug.startsWith(`${dir}/`))
+      if (inside.length === 0) continue
+      items.push({ label: subLabel, items: arrange(inside, dir) })
+    }
     groups.push({ label: area.label, items })
   }
 
@@ -126,32 +152,63 @@ export function sidebar() {
   return groups
 }
 
-/** Every URL the site has ever published, pointing at where that page lives now. */
+/** Every URL the site has ever published, pointing at the FINAL page it lives
+ * at now. Entries are permanent: repointed when a target moves, never deleted,
+ * and never allowed to chain into another redirect. */
 export const redirects = {
   '/getting-started': '/start/install',
-  '/troubleshooting': '/build/troubleshooting',
-  '/concepts': '/build',
-  '/concepts/players-identities-entities': '/build/users-and-entities',
-  '/build/players-identities-entities': '/build/users-and-entities',
-  '/guides': '/build',
-  '/guides/first-gamemode': '/start/first-gamemode',
-  '/guides/gamemodes': '/build/gamemodes',
-  '/guides/maps': '/maps',
-  '/guides/mods': '/build',
-  '/manual': '/build',
-  '/manual/addons-and-identity': '/addons/addons-and-identity',
-  '/manual/archetypes': '/addons/archetypes',
-  '/manual/broadcast-and-rpc': '/build/broadcast-and-rpc',
-  '/manual/components': '/build/components',
-  '/manual/contact-events': '/build/contact-events',
-  '/manual/entities-and-control': '/build/entities-and-control',
-  '/manual/gamemodes': '/build/gamemodes',
-  '/manual/interaction': '/build/interaction',
-  '/manual/languages': '/build/languages',
-  '/manual/limits': '/build/limits',
-  '/manual/mod-manifest': '/addons/mod-manifest',
+  '/troubleshooting': '/modding/troubleshooting',
+  '/concepts': '/modding',
+  '/concepts/players-identities-entities': '/modding/world/entities',
+  '/build/players-identities-entities': '/modding/world/entities',
+  '/guides': '/modding',
+  '/guides/first-gamemode': '/modding/gamemodes',
+  '/guides/gamemodes': '/modding/gamemodes',
+  '/guides/maps': '/modding/maps',
+  '/guides/mods': '/modding',
+  '/manual': '/modding',
+  '/manual/addons-and-identity': '/modding/mod/identity',
+  '/manual/archetypes': '/modding/mod/archetypes',
+  '/manual/broadcast-and-rpc': '/modding/messaging/signals',
+  '/manual/components': '/modding/world/components',
+  '/manual/contact-events': '/modding/world/contact',
+  '/manual/entities-and-control': '/modding/world/entities',
+  '/manual/gamemodes': '/modding/gamemodes',
+  '/manual/interaction': '/modding/world/interaction',
+  '/manual/languages': '/modding/languages',
+  '/manual/limits': '/modding/limits',
+  '/manual/mod-manifest': '/modding/mod/manifest',
   '/manual/not-yet': '/boundary',
-  '/manual/realms-and-lifecycle': '/build/realms-and-lifecycle',
-  '/manual/signals': '/build/signals',
-  '/manual/spatial-queries': '/build/spatial-queries',
+  '/manual/realms-and-lifecycle': '/modding/lifecycle',
+  '/manual/signals': '/modding/messaging/signals',
+  '/manual/spatial-queries': '/modding/world/spatial',
+  '/addons': '/modding/mod',
+  '/addons/addons-and-identity': '/modding/mod/identity',
+  '/addons/archetypes': '/modding/mod/archetypes',
+  '/addons/mod-manifest': '/modding/mod/manifest',
+  '/build': '/modding',
+  '/build/body-decoration': '/modding/presentation/body-decoration',
+  '/build/broadcast-and-rpc': '/modding/messaging/signals',
+  '/build/components': '/modding/world/components',
+  '/build/contact-events': '/modding/world/contact',
+  '/build/entities-and-control': '/modding/world/entities',
+  '/build/entity-ownership': '/modding/world/ownership',
+  '/build/gamemodes': '/modding/gamemodes',
+  '/build/interaction': '/modding/world/interaction',
+  '/build/languages': '/modding/languages',
+  '/build/limits': '/modding/limits',
+  '/build/playing-sound': '/modding/presentation/sound',
+  '/build/realms-and-lifecycle': '/modding/lifecycle',
+  '/build/signals': '/modding/messaging/signals',
+  '/build/spatial-queries': '/modding/world/spatial',
+  '/build/troubleshooting': '/modding/troubleshooting',
+  '/build/users-and-entities': '/modding/world/entities',
+  '/maps': '/modding/maps',
+  '/server/enabled-addons': '/server/enabled-mods',
+  '/start/first-balloon': '/modding/first-mod',
+  '/start/first-gamemode': '/modding/gamemodes',
+  '/reference/broadcast': '/reference/signal',
+  '/reference/rpc-out': '/reference/request',
+  '/reference/gamemode': '/reference/spawn',
+  '/reference/profile': '/reference/session',
 }

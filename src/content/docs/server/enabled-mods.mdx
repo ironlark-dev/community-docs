@@ -1,0 +1,120 @@
+---
+title: "Enabled mods"
+description: "Installed is not the same as enabled. How a session decides what it runs, how load order is derived, and what every player must have."
+kind: how-to
+area: server
+sidebar:
+  order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Installing a mod puts it on the machine, under `assets/workshop/<author>/<mod>/`.
+**Enabling** it puts it in the session. The two are separate, and the session is the
+one that decides: a player who installs a mod, returns to the menu and hosts again
+gets it without relaunching, and a mod you disable stays on disk for the next
+session that wants it.
+
+A mod is the one unit here — a gamemode, a map, a library another mod builds on are
+all mods, each named by its full two-segment id, `author:mod`. See
+[Mod identity](/modding/mod/identity/).
+
+## Enable a set
+
+In `config/server.toml`:
+
+```toml
+[session]
+mods = ["acme:chat", "acme:shop"]
+```
+
+List the mods you actually want. Anything a listed mod declares it needs is pulled
+in for you, so the list stays short and stays yours.
+
+## Three states, three intentions
+
+| Written | Runs |
+|---|---|
+| no `mods` key | everything installed — nobody has curated this install |
+| `mods = []` | the baseline alone — curated down on purpose |
+| `mods = [...]` | the baseline, these, and what these need |
+
+<Aside type="caution">
+An empty list and a missing key look similar and mean opposite things. The file can
+say both, so say the one you mean.
+</Aside>
+
+## The baseline leads
+
+Two mods ship with the game and are enabled in every session: `ironlark:freeroam`,
+the fallback gamemode, and `ironlark:badgrass`, the default map. They load first,
+you never list them, and an empty list still runs them — that is what keeps a bare
+session playable.
+
+Write everything else in full. Every entry is matched against the whole `author:mod`
+id, and an entry that is not an id at all refuses the session naming the text —
+`chat` alone is not an id, and a session listing it will not start.
+
+## Load order is derived, not written
+
+Each mod declares what it needs in its manifest's `[needs]` table, with a version
+range per requirement — see [Dependencies](/modding/mod/dependencies/). The session
+resolves the closure over those declarations, and orders it so that **dependencies
+load before their dependents**, always.
+
+Your list's order is only the tiebreak between mods neither of which needs the
+other. It can never override a declared need, so "reorder the list" is not how you
+fix a startup race — the mod that reacts to another's startup declares the need, and
+the resolver does the rest. A mod the closure pulled in that nobody listed rides at
+the position of the earliest mod that needed it.
+
+The derived order is stated once at session start, and it is the receipt to check
+when in doubt:
+
+```
+enabled: 4 of 13 mod(s), in load order — ironlark:badgrass@0.1.0, ironlark:freeroam@0.1.0, acme:chat@1.0.0, acme:shop@1.0.0
+```
+
+## When the set cannot be resolved
+
+The whole resolution fails rather than quietly skipping a name. A session missing a
+mod you asked for is not the session you configured, and finding that out from a
+missing door an hour later is worse than not starting.
+
+Naming something that is not installed:
+
+```
+this session's mods cannot be resolved:
+  'acme:chat' is not installed; named in the session's mod list
+Install a version every requirer accepts, or remove the mods that need it from the session's mod list.
+```
+
+A version no requirer accepts — one installed version exists per mod, so two mods
+that disagree about it cannot both be satisfied, and the refusal names every side:
+
+```
+this session's mods cannot be resolved:
+  'bree:text' is installed at 1.2.0
+    'acme:chat' needs '^1' (match)
+    'acme:shop' needs '^3' (no match)
+Install a version every requirer accepts, or remove the mods that need it from the session's mod list.
+```
+
+Every violation is reported in one message, so one restart fixes all of them instead
+of revealing them one at a time. Two mods that need each other in a cycle are also a
+refusal, naming the whole cycle.
+
+## Every player needs what the session runs
+
+The host resolves the set once and announces it — each mod with the exact version it
+runs. A joining player runs what the host announced, matched against their own disk;
+their own `[session]` list has no say in someone else's session. A player missing a
+mod, or holding it at a different version, is refused and told which — the exact
+text is on [Diagnose a failed join](/server/diagnose-a-failed-join/).
+
+There is no partial join, deliberately: the content they lack would simply be absent
+from the world around them, and a player who cannot see the doors everyone else
+walks through is in a worse state than one who was turned away.
+
+So the set you enable is the set every player must install, at the versions you run.
+Keep it small until you have a way to hand people content.
