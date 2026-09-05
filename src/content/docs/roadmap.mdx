@@ -31,21 +31,25 @@ Anything not on this page is not planned. What exists today and what does not is
 
 Newest first.
 
-- **Sound** — an addon ships a sound, declares it and plays it, on buses the listener controls → [Playing a sound](/build/playing-sound/)
+- **The Rust SDK** — a public crate, Apache-2.0; a mod is a git dependency away, and `cargo test` runs both halves natively with no game present → [Write your first mod](/modding/first-mod/)
+- **Author input hooks** — a mod names its own hooks with default key, pad and mouse bindings, and its client half is called on the press → [Input](/modding/presentation/input/)
+- **Dependencies between mods** — a mod states `[needs]` and version ranges; the host pulls the rest in and derives the load order, and a pack pins a suite tested together → [Dependencies](/modding/mod/dependencies/)
+- **Per-mod settings** — an operator switches one mod's author hooks off in configuration → [Mod settings](/server/mod-settings/)
+- **Sound** — a mod ships a sound, declares it and plays it, on buses the listener controls → [Sound](/modding/presentation/sound/)
 - **Operator grants** — who may touch whose entities, decided in configuration rather than in code → [Grants](/server/grants/)
-- **Decoration on player bodies** — a mod writes a declared row on a body, one holder per row → [Body decoration](/build/body-decoration/)
-- **The session roster** — display names and per-player facts a mod can read → [Users and entities](/build/users-and-entities/)
+- **Decoration on player bodies** — a mod writes a declared row on a body, one holder per row → [Body decoration](/modding/presentation/body-decoration/)
+- **The session roster** — display names and per-player facts a mod can read → [Reference](/reference/)
 - **A memory ceiling per mod** — an operator sizes the box each mod runs in → [Configuration](/server/configuration/)
 - **Per-instance content root** — one instance can be pointed at its own content, so two on a machine can differ
 - **Content announced to joining players** — a session tells a peer exactly what it runs, and refuses a peer that lacks it
 - **A stated protocol version** — a peer speaking a different one is refused, and told so
-- **The enabled addon set** — a session runs the addons it lists, in the order it lists them → [Choosing addons](/server/enabled-addons/)
-- **Gamemode designation** — one mod holds the session's rule layer → [Gamemodes](/build/gamemodes/)
+- **The enabled mod set** — a session runs the mods it lists, in the order it lists them → [Enabled mods](/server/enabled-mods/)
+- **Gamemode designation** — one mod holds the session's rule layer → [Configuration](/server/configuration/)
 - **Relay pool from the core server** — NAT traversal without configuring anything → [Connectivity](/server/connectivity/)
 - **Session handover from the launcher** — the game resumes a session instead of taking a password
-- **Spatial queries** — ray and overlap against the world → [Spatial queries](/build/spatial-queries/)
-- **Contact events and trigger volumes** — a mod learns when something touched its things → [Contact events](/build/contact-events/)
-- **The signal bus** — mods talk to each other in bytes over host-routed channels → [Signals](/build/signals/)
+- **Spatial queries** — ray and shape probe against the world → [Spatial queries](/modding/world/spatial/)
+- **Contact events and trigger volumes** — a mod learns when something touched its things → [Contact](/modding/world/contact/)
+- **The signal bus** — mods announce facts to each other in bytes, over names their schemas declare → [Signals](/modding/messaging/signals/)
 
 ## Committed <Badge text="being built" variant="caution" />
 
@@ -62,35 +66,23 @@ already reads it the way a server needs to — `--config` points at a file anywh
 `[content] root` keeps content separate from configuration. A dedicated server changes
 which process reads that file, not the file.
 
-### An SDK
+### Mod distribution
 
-**What it will do.** Scaffold a mod, build it locally, and let you test it without
-standing up a full session.
-
-**Today.** You lay out the files yourself and build with `cargo`, and testing means
-hosting a session. [Write your first gamemode](/start/first-gamemode/) walks the whole
-thing.
-
-### Addon distribution
-
-**What it will do.** Package an addon into a single signed file, and install one
-without copying directories by hand — so a server can hand players the content it
-runs.
+**What it will do.** Package a mod into a single signed file, and install one without
+copying directories by hand — so a server can hand players the content it runs.
 
 **Today.** Content is discovered from its install path, and every player installs
-addons manually. Note that identity is derived from where the files sit, and that
-scheme may still move before packaging lands, so treat a published addon name as not
-yet final.
+mods manually. A mod's identity is settled — `author:mod`, from where the files sit —
+so the name you publish under is the name packaging will carry.
 
 ## Intended <Badge text="not started" variant="default" />
 
 We want these. We are not working on them, and nothing here should be planned around.
 
-- **Composition hooks** — a way for mods to take part in each other's decisions instead of only observing
-- **An input surface** — named actions a mod can bind, rather than one debug key
+- **Composition hooks** — mods taking part in each other's decisions instead of only observing; the structural hooks are already declared in the contract, unfired, so exporting them costs nothing when the mechanism lands
 - **A real UI surface** — panels and layout, rather than one line of overlay text
 - **Authoring tools** — programs for building worlds and content directly, rather than a modelling package plus a hand-written manifest
-- **More languages** — synchronous imports, so toolchains without async component support can implement the world
+- **Prebuilt scripting shells** — eight toolchains already build a working mod, measured end to end → [Languages](/modding/languages/); what remains is shipping each scripting language's interpreter prebuilt, so a script mod is plain text and a manifest, with no toolchain on the author's side
 - **Persistence** — a key-value store of bytes a mod owns, with where those bytes live (memory, SQLite, Postgres) an operator's configuration choice behind one unchanging interface
-- **Personas** — splitting account from character, so a player can have several, each with its own traits and saved state
+- **Personas** — splitting account from character, so a player can have several, each with its own traits and saved state; the contract already carries the persona id, answering none until this lands
 - **Server mesh** — sessions that span more than one host

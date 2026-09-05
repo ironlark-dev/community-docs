@@ -15,7 +15,8 @@ const wit = readFileSync(CONTRACT, 'utf8')
 /** Interfaces, each with the functions it declares. */
 const interfaces = new Map()
 for (const [, name, body] of wit.matchAll(/^interface ([\w-]+) \{\n([\s\S]*?)^\}/gm)) {
-  const functions = [...body.matchAll(/^\s{2}([\w-]+):\s*(?:async\s+)?func\b/gm)].map((m) => m[1])
+  // Two-space indent is an interface function; four-space is a resource method.
+  const functions = [...body.matchAll(/^\s{2}(?:\s{2})?([\w-]+):\s*(?:async\s+)?func\b/gm)].map((m) => m[1])
   interfaces.set(name, functions)
 }
 

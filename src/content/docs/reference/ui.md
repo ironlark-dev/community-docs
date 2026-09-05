@@ -2,31 +2,30 @@
 kind: reference
 area: reference
 title: "ui"
+description: "The overlay surface a client half can write: one line of text."
 sidebar:
-  order: 100
+  order: 150
 ---
 
-:::note[Generated]
-From `host.wit`. Edit the WIT, not this page.
-:::
+Part of the host contract in [`host.wit`](/host.wit). The one drawing surface
+a mod has today: a single line of overlay text on the local machine. Anything
+richer is described on [Overlay](/modding/presentation/overlay/).
 
-Imported by a mod's client half only.
+Imported by the client world (`client-mod`) only — the server realm has no
+screen to write.
 
-## Functions
-
-| Function | Summary |
-|---|---|
-| [`set-overlay-text`](#set-overlay-text) | Writes this mod's own overlay line. |
-
-### `set-overlay-text`
+## `set-overlay-text`
 
 ```wit
 set-overlay-text: func(text: string);
 ```
 
-Writes this mod's line on the on-screen overlay. Each mod has its own line —
-another addon writing does not erase yours — shown in the enabled set's order.
-An empty string clears your line, and it is also cleared when your client half
-unloads. Text is cut at 128 characters: the overlay is one line per mod, not a
-panel.
+Replaces this mod's overlay line with `text`. No result: one line of text is
+the whole contract, so a novel is cut where a line would end anyway — at 128
+characters, with a debug line in the host log naming the cut. Characters
+rather than bytes, so the cut cannot split a code point.
 
+## Related
+
+- [Overlay](/modding/presentation/overlay/) — what the overlay is and is not
+- [client-api](/reference/client-api/) — where a client half runs

@@ -2,52 +2,35 @@
 kind: reference
 area: reference
 title: "map-api"
-description: "Host-owned, read-only queries over the loaded map (mapping track). Lets a gamemode compute spawn placement from the map's data instead of taking the host default. Grows into zones / named-entity / surface queries later."
+description: "Host-owned, read-only queries over the loaded map: its declared spawn points."
 sidebar:
-  order: 80
+  order: 130
 ---
 
-:::note[Generated]
-From `host.wit`. Edit the WIT, not this page.
-:::
+Part of the host contract in [`host.wit`](/host.wit). Host-owned, read-only
+queries over the loaded map. One function today; the interface exists so map
+facts have a home that is not the entity verbs.
 
-Imported by a mod's server half only.
+Imported by the server world (`server-mod`) only.
 
-## Functions
-
-| Function | Summary |
-|---|---|
-| [`list-spawns`](#list-spawns) | The loaded map's declared spawn points (position + facing; yaw in RADIANS, so the values feed straight back into entity.spawn). |
-
-### `list-spawns`
+## `spawn-points`
 
 ```wit
-list-spawns: async func() -> list<spawn-transform>;
+record spawn-point { position: vec3, yaw: f32 }
 ```
-
-The loaded map's declared spawn points (position + facing; yaw in RADIANS, so
-the values feed straight back into entity.spawn). Returns a single
-engine-default fallback when the map declares none, so a gamemode always has
-at least one usable spawn.
-
-## Types
-
-### `vec3`
 
 ```wit
-record vec3 {
-  x: f32,
-  y: f32,
-  z: f32,
-}
+spawn-points: async func() -> list<spawn-point>;
 ```
 
-### `spawn-transform`
+What the loaded map suggests, not where anyone will stand: the session's
+gamemode decides that and is free to ignore every one of these. Yaw is in
+radians, feeding straight back into
+[entity.spawn](/reference/entity/#spawn). Never empty: a map declaring none
+yields the engine's own fallback point.
 
-```wit
-record spawn-transform {
-  position: vec3,
-  yaw: f32,
-}
-```
+## Related
 
+- [Authoring maps](/modding/maps/) — declaring spawn points
+- [spawn](/reference/spawn/) — the host's own placement of arrivals
+- [entity](/reference/entity/) — spawning at a point

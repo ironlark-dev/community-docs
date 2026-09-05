@@ -1,0 +1,102 @@
+---
+title: "Choosing a language"
+description: "A mod is a WebAssembly component, the gate is async exports on both sides, and the engine's own measurement says which toolchains pass it today."
+kind: explanation
+area: modding
+sidebar:
+  order: 30
+---
+
+The host loads a **WebAssembly component** implementing one of the two worlds
+in the contract (`server-mod`, `client-mod` — see
+[Realms and lifecycle](/modding/lifecycle/)). It does not inspect, and cannot
+tell, what produced the bytes. Nothing about the surface is Rust-specific by
+design; what narrows the choice in practice is a toolchain question, and this
+page is the honest state of it.
+
+## The gate
+
+Every function a mod exports is an `async func`, and most of what it imports
+is too. A toolchain therefore has to do three things at once: emit **async
+component exports**, handle a **resource** (the entity handle, owned and
+borrowed), and speak the component model's canonical ABI. Where a language
+fails below, it fails at a tool, not at the language.
+
+## What passes, measured
+
+The engine team built one mod per language, instantiated each against the same
+linker the game uses, and drove it through every export with suspension
+exercised deliberately. Eight toolchains pass, in two tiers.
+
+**Tier one — the tool owns suspension.** The author never touches the
+contract:
+
+- **Rust** — `wit-bindgen` and `.await`; the mistakes are unrepresentable.
+- **Lua 5.4** and **JavaScript** — an interpreter compiled into a shell
+  component that owns suspension, memory and the exports; the author writes
+  ordinary script.
+
+**Tier two — suspension is written by hand.** The contract is in the author's
+hands, and the same manual dance is required in each:
+
+- **Zig**, **C**, **C++** and **Go (TinyGo)** — all four work end to end.
+- **Python** sits here for a different reason: `componentize-py` handles the
+  contract cleanly, but it freezes the interpreter at build time and the
+  sandbox has no filesystem, so every import must execute at module scope — a
+  trap that only running the mod catches.
+
+Artifact size spans three orders of magnitude across that list, from tens of
+kilobytes for Zig to tens of megabytes for Python, which ships its interpreter
+inside every mod.
+
+Not reachable today, each blocked at a tool rather than refused by the host:
+the standard Go toolchain, C#, JavaScript through the standard componentizer,
+C++ through its own bindings generator, Kotlin and Java.
+
+## The shipped path
+
+The Rust SDK is the toolchain that exists as a product — the reference mods
+use it, and every code example on this site is written against it:
+
+```toml
+[dependencies]
+ironlark = { git = "https://github.com/ironlark-dev/ironlark-rust" }
+```
+
+Building a component needs the `wasm32-wasip2` target:
+
+```sh
+rustup target add wasm32-wasip2
+cargo build --release --target wasm32-wasip2
+```
+
+The same handlers run natively under `cargo test`, with no game present.
+
+The Lua and JavaScript shells were built to measure the tier, not to ship:
+building one requires a C toolchain, which is exactly what a script author
+must never need. Distributing prebuilt shells is designed and not built — see
+[the roadmap](/roadmap/).
+
+When a second toolchain ships as a product, the pages that depend on the
+toolchain — installing, [limits](/modding/limits/),
+[troubleshooting](/modding/troubleshooting/) — will carry a section per
+language, written in that language's own words, rather than one text with
+tabs.
+
+## What crosses the boundary
+
+Payloads between mods and between a mod's halves are protobuf messages,
+declared in the mod's own `protocol.proto` — see
+[The protocol schema](/modding/mod/protocol-schema/). That is what keeps the
+surface language-neutral in practice and not only in principle: a schema
+compiles for any language with a protobuf library, and the host reads the
+declarations from the compiled schema without running any code.
+
+## Trying another toolchain
+
+The pieces are the same ones Rust uses: the contract (`host.wit`, shipped with
+the engine), a bindings generator for your language that targets the component
+model and can emit async exports, and output named `<mod>_server.wasm` or
+`<mod>_client.wasm` beside the manifest. The generator is where you will find
+out whether your toolchain is ready — and if it is, that is worth reporting,
+because it moves a row of the table above.

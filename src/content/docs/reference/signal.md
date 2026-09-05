@@ -2,53 +2,63 @@
 kind: reference
 area: reference
 title: "signal"
-description: "The signal bus: observe-only mod-to-mod events over host-routed byte channels. Signals are facts, not decisions — no consume, no override, subscriber order undefined. A channel is declared in mod.toml, and a name no mod declared is refused at both emit and subscribe. Server realm only."
+description: "The signal bus: raise a declared name to whoever subscribed, and subscribe to hear future raises."
 sidebar:
-  order: 50
+  order: 70
 ---
 
-:::note[Generated]
-From `host.wit`. Edit the WIT, not this page.
-:::
+Part of the host contract in [`host.wit`](/host.wit). A raise announces
+something to whoever subscribed to that name, the raiser included. There is no
+addressee — the name's own declaration says which realm's bus it lands on and
+whether it crosses to the client realms. One bus per realm on each machine,
+and both realms raise here. How signals are declared and designed is
+[Signals](/modding/messaging/signals/); the declaration itself lives in the
+[protocol schema](/modding/mod/protocol-schema/).
 
-A channel is declared in `mod.toml` under `[declares] channels`, and follows the rule
-every name-taking import follows: a bare name is one of your own and the host qualifies
-it to `<author>:<addon>:<mod>/channel/<name>`, while a name carrying `:` is another
-mod's, taken as written. A name no mod declared is refused where it is written — at
-`emit` and at `subscribe` alike.
+Imported by both worlds: `server-mod` and `client-mod`.
 
-What arrives in `server-api.on-signal` is the **qualified** id, not the bare name you
-wrote. Compare against the full form, including for a channel of your own.
+Ownership is not enforced; existence is. Names resolve to ids once, through
+[resolve.signal](/reference/resolve/#signal). A refusal is the
+[error record](/reference/types/#error).
 
-## Functions
-
-| Function | Summary |
-|---|---|
-| [`emit`](#emit) | Fan `payload` out to every subscriber of `channel`, excluding the sender (no self-delivery — kills the trivial feedback loop). |
-| [`subscribe`](#subscribe) | Deliver future emits on `channel` to this mod's `server-api.on-signal`. |
-
-### `emit`
+## `signal`
 
 ```wit
-emit: func(channel: string, payload: list<u8>) -> result<_, string>;
+signal: func(signal: signal-id, payload: list<u8>) -> result<_, error>;
 ```
 
-Fan `payload` out to every subscriber of `channel`, excluding the emitter
-(no self-delivery — kills the trivial feedback loop). Delivery is reliable
-in the normal case and sheds loudly per overloaded subscriber; it never
-stalls the simulation. Emits fired while server mods are still loading are
-queued and flushed once all of them are up, so an init-time emit cannot
-race another mod's init-time subscribe. Errors on an empty or oversized
-channel name, an oversized payload, or an overflow of that pre-load queue.
+Raises `payload` under the resolved name. Synchronous, because a raise awaits
+nothing: success means the host took it, and overload is a typed refusal on
+every route rather than a suspended caller. A raise made before the realm's
+mods are all up queues until they are.
 
-### `subscribe`
+What arrives at each subscriber is `on-signal` on its exported API
+([server](/reference/server-api/#on-signal),
+[client](/reference/client-api/#on-signal)), carrying the payload and the
+host-stamped source id of the raiser.
+
+Refuses:
+
+- an over-cap payload, with the cap in the message. The cap is fixed by how
+  the declaration says the host carries the name: 64 KiB, or 1 KiB for a
+  newest-wins signal, which must fit one datagram.
+- overload — a full queue, or more than 16 raises by one mod in one tick. The
+  refusal is per tick; a refused raiser raises again next tick.
+- a forged, stale or undeclared id.
+
+## `subscribe`
 
 ```wit
-subscribe: func(channel: string) -> result<_, string>;
+subscribe: func(signal: signal-id) -> result<_, error>;
 ```
 
-Deliver future emits on `channel` to this mod's `server-api.on-signal`.
-Idempotent; no replay — a signal is a moment, a late subscriber misses
-history by design. Subscriptions die with the mod. Errors on an empty or
-oversized channel name.
+Delivers future raises of the name to this half's `on-signal` export.
+Idempotent, no replay — a signal is a moment, and a late subscriber misses
+history by design. Subscriptions die with the mod. Refuses a forged, stale or
+undeclared id, and a name whose declared audience this realm cannot hear.
 
+## Related
+
+- [signal-to](/reference/signal-to/) — the same raise, narrowed to one participant
+- [request](/reference/request/) — the awaited alternative
+- [Signals](/modding/messaging/signals/) — designing with the bus

@@ -1,0 +1,138 @@
+---
+title: "Modding"
+description: "What a mod is, how its two halves run, and the map of every page about making one."
+kind: explanation
+area: modding
+sidebar:
+  order: 1
+  label: "What a mod is"
+---
+
+Everything a session runs beyond the bare engine is a mod: the gamemode, the map,
+every prop, every sound. This page is the mental model the rest of the area
+assumes. If you want to build something right now, start with
+[your first mod](/modding/first-mod/) and come back when a word needs defining.
+
+## The mod is the one unit
+
+A mod is one directory: `workshop/<author>/<mod>/`, marked by a `mod.toml`
+inside it. That one unit is:
+
+- **the unit of identity** — its id is `author:mod`, read off the install path,
+  and every name it publishes lives under that id. See
+  [Identity](/modding/mod/identity/).
+- **the unit of versioning** — the manifest states one semantic version, and
+  that is what other mods' requirements are matched against.
+- **the unit of enabling** — a session runs a set of mods; the server decides
+  the set and every joiner runs exactly it. See
+  [Choosing mods](/server/enabled-mods/).
+- **the unit of dependency** — a mod states what it needs in its manifest, and
+  enabling it enables its needs. See
+  [Dependencies](/modding/mod/dependencies/).
+
+There is no second container above or below it. A map is a mod filling a role, a
+suite of mods is dependencies between mods, and a mod with no code at all — a
+map, a model pack — is a mod like any other.
+
+## Up to two halves
+
+A mod ships one or two WebAssembly components, and they run in different places
+with different powers:
+
+- **The server half** runs once per session, on the machine hosting it, and
+  holds authority: it spawns entities, moves them, decides scores and rules.
+- **The client half** runs on every player's machine and owns what that player
+  sees and does: the overlay, local sounds, reacting to a key.
+
+Most mods ship only a server half. Each half is one trait implementation —
+`ServerMod` or `ClientMod` — compiled to a component installed beside the
+manifest as `<mod>_server.wasm` and `<mod>_client.wasm`. Every hook has an empty
+default body, so a half writes only the hooks it answers:
+
+```rust
+// From the ironlark crate: ServerMod, Context and Player.
+use ironlark::server::prelude::*;
+
+struct Door;
+
+impl ServerMod for Door {
+    async fn on_join(_ctx: Context, player: Player) {
+        log::info!("{player} arrived");
+    }
+}
+
+// The last line of a server half's src/lib.rs.
+ironlark::export_server!(Door);
+```
+
+That is a whole server half. The shipped toolchain is the Rust SDK:
+
+```toml
+[dependencies]
+ironlark = { git = "https://github.com/ironlark-dev/ironlark-rust" }
+```
+
+Rust is the shipped path, not the required one — the contract is
+language-neutral, and [Choosing a language](/modding/languages/) says exactly
+what else passes today.
+
+## The host and the contract
+
+The engine is the **host**. It loads the components, calls their hooks, and
+serves every capability a mod has as an import: logging, spawning, raising
+signals, playing sounds. What a realm may do is exactly its import set — a
+client half cannot spawn an entity because the spawning interface is not among
+its imports. [Realms and the session lifecycle](/modding/lifecycle/) lays out
+both sets, and [the reference](/reference/) documents every function.
+
+What mods say to each other and across the network is declared in a schema
+beside the manifest — `protocol.proto`, protobuf messages carrying the
+declaration as options on the payload type itself. See
+[The protocol schema](/modding/mod/protocol-schema/).
+
+What the host refuses, drops or caps is deliberate and documented:
+[Limits and pacing](/modding/limits/).
+
+## The map of this area
+
+Doing:
+
+- [Your first mod](/modding/first-mod/) — build, install and see one run
+- [Realms and the session lifecycle](/modding/lifecycle/) — where code runs,
+  when it loads, when it is torn down
+- [Choosing a language](/modding/languages/) — the gate, and what passes it
+- [Limits and pacing](/modding/limits/) — the real numbers
+- [Troubleshooting](/modding/troubleshooting/) — it loads but misbehaves
+
+The unit on disk — [The mod directory](/modding/mod/):
+
+- [Identity](/modding/mod/identity/) — `author:mod`, granted by the install path
+- [The manifest](/modding/mod/manifest/) — every key `mod.toml` may carry
+- [Declarations](/modding/mod/declarations/) — the six kinds of name a mod publishes
+- [The protocol schema](/modding/mod/protocol-schema/) — signals and requests, on the payload types
+- [Archetypes](/modding/mod/archetypes/) — publishing something that can exist in the world
+- [Dependencies](/modding/mod/dependencies/) — needs, version ranges and load order
+
+The world, from the server half:
+
+- [Entities and control](/modding/world/entities/),
+  [Ownership](/modding/world/ownership/),
+  [Components](/modding/world/components/)
+- [Interaction](/modding/world/interaction/),
+  [Contact](/modding/world/contact/),
+  [Spatial queries](/modding/world/spatial/)
+
+Talking:
+
+- [Signals](/modding/messaging/signals/) — announcements, to whoever subscribed
+- [Requests](/modding/messaging/requests/) — a client half asks, the server half answers
+
+Reaching the player:
+
+- [Sound](/modding/presentation/sound/),
+  [The overlay](/modding/presentation/overlay/),
+  [Body decoration](/modding/presentation/body-decoration/),
+  [Input](/modding/presentation/input/)
+
+Worlds themselves: [Maps](/modding/maps/). What does not exist yet:
+[The boundary](/boundary/). One page per word: [the glossary](/glossary/).

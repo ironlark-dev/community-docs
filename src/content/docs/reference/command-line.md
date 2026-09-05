@@ -4,7 +4,7 @@ area: reference
 title: "Command line"
 description: "Every flag the game takes, and what you must pass when you start it yourself instead of through the launcher."
 sidebar:
-  order: 1
+  order: 10
 ---
 
 Two ways to start the game, and they differ in one important respect.
@@ -31,10 +31,16 @@ were given with your access.
 |---|---|---|
 | `-b`, `--become-host` | off | Host the session. |
 | `--connect-to <id>` | none | Join the session hosted by this user id. |
-| `--map <id>` | configured | Map to load, as `author:addon:mod`. Host only; a joining player loads the host's. |
-| `--gamemode <id>` | configured | Which mod holds the gamemode role. |
+| `--map <id>` | configured | Map to load, as `<author>:<mod>`. Host only; a joining player loads the host's. |
+| `--gamemode <id>` | configured | Which mod holds the gamemode role, as `<author>:<mod>`. Exactly one runs per session; any other installed gamemode stays unloaded. |
 
 With neither `--become-host` nor `--connect-to`, the game opens its own menu.
+
+With `--gamemode` unset and nothing configured, the session resolves to the
+only installed candidate. It deliberately does not fall back to a named mod: a
+default spelled in the host would be the host knowing a specific piece of
+gameplay, and with two candidates installed there is no answer worth guessing
+— the session refuses to start and says which to pick.
 
 ## Where things live
 
@@ -78,7 +84,7 @@ pool is otherwise fetched for you — see [Connectivity](/server/connectivity/).
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `--ice-servers <urls>` | fetched | Comma-separated `stun:` / `turn:` / `turns:` URLs, replacing the fetched set. |
+| `--ice-servers <urls>` | fetched | Comma-separated `stun:` / `turn:` / `turns:` URLs, replacing the fetched set. When none are passed and none could be fetched, the game falls back to public STUN, which discovers a reflexive address and nothing more — there is no relay in the fallback, so a peer behind a symmetric NAT stays unreachable. |
 | `--turn-username`, `--turn-password` | empty | Credentials for those TURN URLs. Meaningless without `--ice-servers`, since a fetched set carries its own. |
 | `--ice-transport-policy <policy>` | `all` | `relay` refuses every candidate except a relayed one. A test tool: it makes a working direct connection fail on purpose. |
 

@@ -4,7 +4,7 @@ area: reference
 title: "Component rows"
 description: "Every component a mod can read or write through set-component and get-component: fields, value kinds, defaults, and per-row properties."
 sidebar:
-  order: 35
+  order: 110
 ---
 
 :::note[Generated values]
@@ -12,7 +12,12 @@ Defaults quoted here are the host's registered values; they cross the wire, so
 every peer sees the host's numbers, never its own build's.
 :::
 
-Capability grows by rows in this table, never by new verbs. Two properties a
+A row's name resolves once through
+[resolve.component](/reference/resolve/#component), its dotted paths through
+[resolve.field](/reference/resolve/#field); reads and writes then go through
+[entity.get-component and entity.set-component](/reference/entity/#set-component).
+
+Capability grows by rows in this table, never by new verbs. Three properties a
 row can carry:
 
 - **Insertable** — the first `set-component` attaches the component: the host
@@ -24,12 +29,19 @@ row can carry:
   the mod that wrote it: only that mod changes it, anyone with write reach may
   reset it to the defaults, and the reset releases it. Writing the defaults
   back is the release; there is no release verb.
+- **Decoration** — a statement observers see about a body, which a mod may
+  write on any possessed player body after declaring the row under
+  `body-rows` in its manifest. Host code classifies which rows qualify, never
+  config or a manifest: no row does that returns a value to the writer, that
+  the simulation, physics, possession or input systems consume, or whose
+  default is not its inert state. A decoration row is always insertable and
+  writer-scoped. See [Body decoration](/modding/presentation/body-decoration/).
 
-| Row | Insertable | Writer-scoped |
-|---|---|---|
-| `transform` | no | no |
-| `material` | no | no |
-| `label` | yes | yes |
+| Row | Insertable | Writer-scoped | Decoration |
+|---|---|---|---|
+| `transform` | no | no | no |
+| `material` | no | no | no |
+| `label` | yes | yes | yes |
 
 ## `transform`
 
@@ -62,7 +74,7 @@ is not a UI widget.
 
 | Path | Kind | Default | Notes |
 |---|---|---|---|
-| `text` | text | `""` | empty renders nothing and is the released state; content rules of the [value vocabulary](/reference/entity/#field-value) apply — 256-byte cap, no control characters, at least one visible character |
+| `text` | text | `""` | empty renders nothing and is the released state; content rules of the [value vocabulary](/reference/types/#field-value) apply — 256-byte cap, no control characters, at least one visible character |
 | `offset` | vec3 | `(0, 1.2, 0)` | meters from the entity's origin along the world axes; never rotated with the entity |
 | `max_distance` | number | `30` | camera distance beyond which the label is invisible |
 | `fade` | number | `5` | width of the fade band inside `max_distance`, in meters |

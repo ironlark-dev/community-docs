@@ -1,6 +1,7 @@
 ---
 title: "Running a server"
 description: "Hosting a session, deciding what it runs, and working out why somebody cannot join."
+kind: explanation
 area: server
 sidebar:
   order: 1
@@ -18,9 +19,10 @@ before anything else.
 
 ## Operating it
 
-- [Configuration](/server/configuration/) — `config/server.toml`, every key, and the part that carries into a dedicated server unchanged
-- [Choosing addons](/server/enabled-addons/) — installed is not enabled; what every player must have
-- [Grants](/server/grants/) — letting a cleanup or moderation addon reach what it did not create
+- [Configuration](/server/configuration/) — `config/server.toml`, every section and every key
+- [Enabled mods](/server/enabled-mods/) — installed is not enabled; what a session runs, and in what order
+- [Grants](/server/grants/) — letting a cleanup or moderation mod reach what it did not create
+- [Per-mod settings](/server/mod-settings/) — switching one mod's own hooks off without disabling the mod
 - [Connectivity](/server/connectivity/) — why there is no port, and what carries traffic when a direct path fails
 - [Diagnose a failed join](/server/diagnose-a-failed-join/) — symptom, cause, fix
 

@@ -1,7 +1,7 @@
 ---
 title: "Configuration"
-description: "One file decides what an instance runs. It is also the part of today's setup that survives into a dedicated server unchanged."
-kind: reference
+description: "One file, config/server.toml, decides what an instance runs: the session's mods, gamemode and map, the content root, grants, limits, audio, and per-mod settings."
+kind: how-to
 area: server
 sidebar:
   order: 2
@@ -10,30 +10,50 @@ sidebar:
 import { Aside } from '@astrojs/starlight/components';
 
 An instance is configured by one file, `config/server.toml`, beside the install.
-Sections inside it, never a file per topic.
+Sections inside it, never a file per topic. If you have never written one, that is
+fine — a missing file is ordinary, and every key below has a default.
 
 <Aside type="danger" title="Secrets do not go in this file">
 Credentials arrive through the environment. A process's command line is readable by
 anyone on the machine, and a configuration file is the thing you commit and share.
+The launcher handles this for you; the game never sees your password.
 </Aside>
 
 ## The whole file
 
+Every section this file can carry, each with a value you might actually write:
+
 ```toml
 [session]
-addons = ["ironlark:examples"]
-gamemode = "ironlark:core:freeroam"
-map = "ironlark:core:badgrass"
+mods = ["ironlark:echo", "acme:janitor"]
+gamemode = "ironlark:freeroam"
+map = "ironlark:badgrass"
 
 [content]
 root = "/srv/ironlark/content"
 
+[[grants.rule]]
+to = "acme:janitor"
+verbs = ["read", "remove"]
+over = "owner:*"
+
+[limits]
+memory_mb = 256
+
 [audio]
 enabled = true
-muted_addons = []
+muted_mods = ["acme:janitor"]
+device = "pipewire"
 
 [audio.gain]
 effects = 1.0
+environment = 1.0
+music = 0.8
+interface = 1.0
+voice = 1.0
+
+[mods."ironlark:echo"]
+disabled-hooks = ["echo"]
 ```
 
 Every key is optional. A missing file is ordinary — somebody who installed the game
@@ -41,25 +61,44 @@ and pressed Host has never written one. A file that exists and does **not** pars
 an error and stops the process: you wrote it and meant it, and running a different
 configuration than you asked for is worse than refusing to start.
 
+<Aside type="caution" title="A wrong key refuses the start">
+The file is checked key by key, and a key the game does not know stops the process
+just like a syntax error would. Silently skipping it is how a typo becomes a setting
+that never applied, with nothing anywhere saying so. So `mpa` instead of `map`, or
+`disabled_hooks` instead of `disabled-hooks`, is a refusal that names the key — not
+a session quietly running without your setting.
+</Aside>
+
+Mods are named by their full two-segment id, `author:mod` — `ironlark:freeroam`,
+`acme:janitor`. See [Mod identity](/modding/mod/identity/).
+
 ## `[session]`
+
+What this instance runs: the content it enables, and the selections it makes from
+that content.
 
 | Key | Type | Meaning |
 |---|---|---|
-| `addons` | list of ids | Addons to enable, in load order. Load order is also init order, so a mod that reacts to another's startup can rely on it. |
-| `gamemode` | id | Which mod holds the gamemode role. |
-| `map` | id | Map to load. |
+| `mods` | list of ids | Mods to enable. Typically the roots you want; each mod's own requirements pull the rest in. [Enabled mods](/server/enabled-mods/) is the full story. |
+| `gamemode` | id | Which mod holds the gamemode role — the session's baseline rule layer. |
+| `map` | id | Map to load. Absent means `ironlark:badgrass`, which ships with the game. |
 
-`addons` has three states, and they are three different intentions:
+`mods` has three states, and they are three different intentions:
 
 | Written | Means |
 |---|---|
 | key absent | nobody has curated this install; everything installed runs |
-| `addons = []` | curated down to the baseline alone |
-| `addons = [...]` | exactly these, in this order |
+| `mods = []` | curated down to the baseline alone |
+| `mods = [...]` | the baseline plus exactly these and what they need |
 
-`gamemode` unset resolves to the only installed candidate. With none, the session runs
-bare. With several and no choice made, the session **refuses to start** and names them
-— the host will not guess which rules you meant.
+The list's order is only the tiebreak between mods neither of which needs the other —
+load order is derived from what mods declare they need, and
+[Enabled mods](/server/enabled-mods/) explains both.
+
+`gamemode` unset resolves to the only installed candidate. With none installed, the
+session runs bare on the host's own spawn. With several and no choice made, the
+session **refuses to start** and names them — the host will not guess which rules you
+meant.
 
 ## `[content]`
 
@@ -67,9 +106,17 @@ bare. With several and no choice made, the session **refuses to start** and name
 |---|---|---|
 | `root` | path | Directory holding `workshop/`. Absent means the install's own `assets/`. |
 
-Content is deployed unlike anything else here: the same addons back many instances,
-the directory can be read-only, and one copy can sit behind several instances at once.
-That is why it is its own section and its own path.
+Content is deployed unlike anything else here: the same mods back many instances,
+the directory can be read-only, and one copy can sit behind several instances at
+once. That is why it is its own section and its own path.
+
+## `[grants]`
+
+Authority over entities a mod did not create, one `[[grants.rule]]` row per grant.
+Absent means nothing is granted, which is what a machine that has never stated a
+policy has decided. If you run no cleanup or moderation mod, you never write this
+section — [Grants](/server/grants/) covers the rows, the scope grammar and the log
+lines that confirm what was resolved.
 
 ## `[limits]`
 
@@ -78,44 +125,60 @@ That is why it is its own section and its own path.
 | `memory_mb` | integer | Memory ceiling per mod, in MiB. Absent means 128. |
 
 The ceiling applies to each mod's linear memory and its garbage-collected heap
-separately, so a mod that ships an interpreter pays for both. A mod that grows past it
-is stopped by name and taken out of the session rather than restarted, because a fresh
-instance would hit the same ceiling.
+separately, so a mod that ships an interpreter pays for both. A mod that grows past
+it is stopped by name and taken out of the session rather than restarted, because a
+fresh copy would hit the same ceiling.
 
 This is the one resource limit that is yours to set, because it is the one where you
-know something the host cannot: whether this instance is a small container or a machine
-expected to carry a heavy scripting pack. A value below 2 refuses to start — no shipped
-mod can instantiate under it — and the resolved value is printed once at startup.
+know something the host cannot: whether this instance is a small container or a
+machine expected to carry a heavy scripting pack. A value below 2 refuses to start —
+no shipped mod can instantiate under it.
 
-Like [`[grants]`](/server/grants/), this section is read only by the host; nothing here
-is ever handed to an addon.
+Like `[grants]`, this section is read only by the host; nothing here is ever handed
+to a mod.
 
 ## `[audio]`
 
 The one section that belongs to whoever is sitting at this machine rather than to
-the deployment. The host decides what is offered; what is heard is decided here.
+the deployment. The host decides what is offered; what is heard is decided here. A
+headless build reads the same file without complaint, so an operator's file is never
+refused over a section the server will not use.
 
 | Key | Type | Meaning |
 |---|---|---|
-| `enabled` | boolean | Whether addon sound is played at all. Absent means yes. |
-| `muted_addons` | list of strings | Addons whose sound this machine drops, each `author:addon`. |
+| `enabled` | boolean | Whether mod sound is played at all. Absent means yes. |
+| `muted_mods` | list of ids | Mods whose sound this machine drops, each `author:mod`. |
 | `device` | string | The output to play through. Absent takes the machine's default. |
 
 `[audio.gain]` carries one multiplier per bus — `effects`, `environment`, `music`,
 `interface`, `voice` — each between `0.0` and `2.0`, absent meaning `1.0`. A value
 outside that range refuses to start and names the key.
 
-Turning `enabled` off, or a bus's gain to zero, is the guarantee. Muting an addon by
-name is a convenience: two addons that cooperate can play each other's sounds and get
+Turning `enabled` off, or a bus's gain to zero, is the guarantee. Muting a mod by
+name is a convenience: two mods that cooperate can play each other's sounds and get
 around it, which is why the bus and global controls exist above it.
 
-`device` is the escape hatch, and you should not normally need it. The game prefers a
-sound server that is already running, because a system's own default does not always
-route to it; failing that it takes the machine's default, and failing that every other
-output in turn. It logs the one it took either way. `default` is the one value that is
-not an output — it asks for whatever the game would have chosen on its own, which is how
-this key is undone. On Linux, [where this matters most](/start/linux/), the log is also
-where the names you could write instead appear.
+`device` is the escape hatch, and you should not normally need it. The game prefers
+a sound server that is already running; failing that it takes the machine's default,
+and failing that every other output in turn. It logs the one it took either way.
+`default` is the one value that is not an output — it asks for whatever the game
+would have chosen on its own, which is how this key is undone without deleting it.
+On Linux, [where this matters most](/start/linux/), the log is also where the names
+you could write instead appear.
+
+## `[mods."author:mod"]`
+
+Settings of one named mod, keyed by its full id — today, which of its own hooks this
+deployment runs it without:
+
+```toml
+[mods."ironlark:echo"]
+disabled-hooks = ["echo"]
+```
+
+A sibling of `[session]` rather than a key inside it: enabling a mod is the
+session's shape, while these are settings of one named mod. The whole switch is
+[Per-mod settings](/server/mod-settings/).
 
 ## Overriding for one run
 
@@ -128,22 +191,17 @@ Precedence is defaults, then the file, then the command line:
 | `--map <id>` | `[session] map` |
 | `--gamemode <id>` | `[session] gamemode` |
 
-A scripted or one-off run can override a deployment without editing it.
+A scripted or one-off run can override a deployment without editing it. Every flag
+is on [Command line](/reference/command-line/).
 
 ## Your configuration outlives this setup
 
-Hosting today means running the game as the host, and the session ends when you leave.
-A dedicated server — a host with no player attached — is planned and not built.
+Hosting today means running the game as the host, and the session ends when you
+leave. A dedicated server — a host with no player attached — is planned and not
+built; see [the roadmap](/roadmap/).
 
 What you write now is not throwaway, and this is checkable rather than promised:
-
-- `--config` names the file, so it does not have to sit beside the install.
-- `[content] root` names the content directory separately, so one read-only copy of
-  `workshop/` can serve several instances.
-
-<Aside type="tip" title="What carries over">
-Both work today. A dedicated server changes **which process reads that file**, not the
-file. The same `[session] addons`, `gamemode` and `map` will select the same things.
-Write your server as a file now, and moving it later is a deployment change rather
-than a rewrite.
-</Aside>
+`--config` names the file, so it does not have to sit beside the install, and
+`[content] root` names the content directory separately, so one read-only copy of
+`workshop/` can serve several instances. A dedicated server changes **which process
+reads this file**, not the file.

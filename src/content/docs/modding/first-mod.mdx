@@ -1,0 +1,296 @@
+---
+title: "Your first mod"
+description: "From an empty directory to a mod of your own: one marker standing in the world, and a greeting in the log for every joiner."
+kind: tutorial
+area: modding
+sidebar:
+  order: 15
+---
+
+import { Aside, FileTree, Steps } from '@astrojs/starlight/components';
+
+A mod is the one unit of content: a directory the engine discovers, holding a
+manifest that declares what the mod publishes and a WebAssembly component that
+runs it — see [the modding hub](/modding/) for the whole picture. This page
+takes you from an empty directory to a mod under your own author name. It will
+put one marker in the world and greet every player who joins, in the server
+log. Everything here is code you write; no engine checkout is involved.
+
+## What you need
+
+- The game, installed and able to host a session.
+- A Rust toolchain, with the WebAssembly target this compiles to:
+
+  ```sh
+  rustup target add wasm32-wasip2
+  ```
+
+The mod in this page is called `greeter` and its author is called `you`. Put
+your own name where `you` stands — the rest works unchanged.
+
+## Build it
+
+<Steps>
+
+1. **Make the directory — the path is the identity.**
+
+   Content lives under your install's `assets/workshop/`, exactly two levels
+   deep: author, then mod. Those two directory names ARE the mod's identity,
+   `you:greeter` — a manifest cannot claim a name, because where the files sit
+   cannot be forged. Names are lowercase ASCII letters, digits and `-`,
+   starting with a letter or a digit.
+
+   By the end of this page the directory looks like this:
+
+   <FileTree>
+   - assets
+     - workshop
+       - you/ your author name
+         - greeter/ the mod — together the two names are `you:greeter`
+           - mod.toml what the mod declares
+           - Cargo.toml the crate workspace
+           - .cargo
+             - config.toml pins the build target
+           - server
+             - Cargo.toml
+             - src
+               - lib.rs the code
+   </FileTree>
+
+   <Aside type="caution" title="Keep the mod name to one word">
+   The engine looks for a component named `<mod>_server.wasm`. Cargo writes a
+   crate named `greeter-server` as `greeter_server.wasm`, which matches — but a
+   mod named `my-thing` would need a component named `my-thing_server.wasm`,
+   and cargo cannot produce a file with a hyphen before the suffix. A one-word
+   mod name sidesteps the whole problem.
+   </Aside>
+
+2. **Write the manifest — `mod.toml`.**
+
+   The manifest is the mod's public declaration: its version, what it puts in
+   the world, and which events it wants to hear.
+
+   ```toml
+   [mod]
+   version = "0.1.0"
+   description = "My first mod: one marker in the world, and a greeting for every joiner."
+
+   [[declares.archetype]]
+   id = "marker"
+   shape = { kind = "box", size = [1.4, 2.4, 0.2] }
+   material = { color = "#26bfe6" }
+
+   [declares.server]
+   hooks = ["on_join"]
+   ```
+
+   Two declarations, and each earns its place:
+
+   - `[[declares.archetype]]` publishes a kind of thing that can exist in the
+     world. This one is a host-built `shape` — a box with a colour — so no
+     model file is needed; mesh and collider come from the same numbers. Its
+     full name is `you:greeter/archetype/marker`, and your own code spawns it
+     by the bare `marker`.
+   - `[declares.server]` lists the events your server code is woken for.
+     A hook you do not declare never fires: writing an `on_join` function
+     without declaring it here compiles fine and then never runs, which is the
+     least fun bug to find. `init` is the exception — it always runs, so it
+     needs no line.
+
+3. **Write the server crate.**
+
+   The mod's code is an ordinary Rust library crate that compiles to a
+   WebAssembly component. Three files.
+
+   The workspace `Cargo.toml`, beside `mod.toml`:
+
+   ```toml
+   [workspace]
+   resolver = "2"
+   members = ["server"]
+
+   [workspace.package]
+   version = "0.1.0"
+   edition = "2024"
+
+   [workspace.dependencies]
+   ironlark = { git = "https://github.com/ironlark-dev/ironlark-rust" }
+   log = "0.4"
+
+   [profile.release]
+   opt-level = "z"
+   lto = true
+   codegen-units = 1
+   strip = "debuginfo"
+   ```
+
+   The release profile keeps symbol names while dropping debug info: a guest
+   panic then reports readable function names instead of bare wasm indices,
+   and the component stays small.
+
+   `.cargo/config.toml`, so a plain `cargo build` can never fall back to your
+   machine's native target:
+
+   ```toml
+   # Mods compile to WASI Preview 2 components. Pin the target so a plain
+   # `cargo build` never falls back to the native host target.
+   [build]
+   target = "wasm32-wasip2"
+   ```
+
+   And the code itself, `server/Cargo.toml`:
+
+   ```toml
+   [package]
+   name = "greeter-server"
+   version.workspace = true
+   edition.workspace = true
+
+   [lib]
+   crate-type = ["cdylib"]
+
+   [dependencies]
+   ironlark = { workspace = true }
+   log = { workspace = true }
+   ```
+
+   `server/src/lib.rs`:
+
+   ```rust
+   // My first mod: spawns its marker once, then greets every joiner in the log.
+
+   mod protocol {
+       ironlark::declares!("../mod.toml");
+   }
+
+   use ironlark::server::prelude::*;
+
+   struct Greeter;
+
+   #[ironlark::hooks("../mod.toml")]
+   impl ServerMod for Greeter {
+       async fn init() {
+           log::info!("greeter: init");
+
+           let at = SpawnPoint {
+               position: Vec3::new(0.0, 1.2, 4.0),
+               yaw: 0.0,
+           };
+           let marker = match Entity::spawn(protocol::archetype::Marker, at).await {
+               Ok(handle) => handle,
+               Err(e) => {
+                   log::error!("greeter: spawn failed: {e}");
+                   return;
+               }
+           };
+           if let Err(e) = marker.set_id("marker").await {
+               log::error!("greeter: set-id failed: {e}");
+               return;
+           }
+           log::info!("greeter: spawned the marker");
+       }
+
+       async fn on_join(_ctx: Context, player: Player) {
+           log::info!("greeter: welcome, {player}");
+       }
+   }
+
+   ironlark::export_server!(Greeter);
+   ```
+
+   Reading it top to bottom:
+
+   - `ironlark::declares!("../mod.toml")` reads your manifest while the crate
+     compiles and mints one Rust item per declared archetype —
+     `protocol::archetype::Marker` here. Spawning by a checked item instead of
+     a string means a typo is a compile error, and renaming the archetype in
+     the manifest breaks the build instead of the session. The path is
+     relative to the crate — `server/`, hence `../`.
+   - `impl ServerMod for Greeter` is the whole surface: every hook has a
+     default, so you write only the ones you want. `init` runs once when the
+     mod loads; it spawns the marker with `Entity::spawn` and gives it a
+     durable address with `set_id`, so other mods (and a reload) can find it.
+   - `#[ironlark::hooks("../mod.toml")]` ties the impl to the manifest: the
+     hooks you declared in step 2 are checked against the functions you
+     actually wrote, at compile time.
+   - `on_join` receives the joiner as a `Player`. Logging `{player}` prints
+     `player#<n>`, the number this participation is addressed by. It fires
+     because step 2 declared it.
+   - `ironlark::export_server!(Greeter)` makes the type the component's
+     exported server half. Without it the file is a library nobody calls.
+
+4. **Build it.**
+
+   From the mod's directory (beside `mod.toml`):
+
+   ```sh
+   cargo build --release --target wasm32-wasip2
+   ```
+
+   The component lands at
+   `target/wasm32-wasip2/release/greeter_server.wasm`, and the engine reads it
+   from exactly there — no copy step. A shipped mod instead stages the
+   component beside `mod.toml` as `greeter_server.wasm`, and a staged copy
+   always wins: if you rebuild while a stale staged copy sits there, the
+   engine loads the copy and warns that it is
+   "using the staged component ... while a newer build sits at ...", naming
+   both paths. During development, simply do not stage.
+
+5. **Let the session pick it up.**
+
+   Installed is enabled, by default: when the server configuration has no
+   `[session] mods` list, nobody has curated the install and everything under
+   `workshop/` runs — your mod included, with nothing to switch on.
+
+   A curated install lists what runs, in `config/server.toml` beside the
+   install. If yours has such a list, add your identity to it:
+
+   ```toml
+   [session]
+   mods = ["you:greeter"]
+   ```
+
+   How that list works — order, dependencies, what an empty list means — is
+   [Enabled mods](/server/enabled-mods/).
+
+6. **Run it and read the log.**
+
+   Host a session. The hosting instance writes its log to `logs/host.log`
+   under the directory it runs in. Three lines tell you everything worked, in
+   this order:
+
+   ```
+   server-mod loaded: you:greeter
+   greeter: init
+   greeter: spawned the marker
+   ```
+
+   The first is the engine reporting your component loaded; the other two are
+   your own `init` speaking. Every line a mod writes is attributed with its
+   identity, so a session full of mods stays readable. Then join, and your
+   greeting appears with the joiner's participation number in place of `<n>`:
+
+   ```
+   greeter: welcome, player#<n>
+   ```
+
+   In the world itself, the marker stands as a coloured box a few steps ahead
+   of the default spawn.
+
+   If instead the log says your mod
+   "has a server realm that is not built: no component at ...", the engine
+   found your manifest but not your component — the message names the exact
+   `cargo build` command that fixes it. Run it and start again.
+
+</Steps>
+
+## Where to go next
+
+Your mod declares, spawns and listens — every mod is a variation on those
+three moves.
+
+- [Signals](/modding/messaging/signals/) — say things other mods (and
+  clients) can hear, and hear theirs.
+- [Entities](/modding/world/entities/) — move the marker, find it again,
+  own it properly.
+- [Declarations](/modding/mod/declarations/) — everything a manifest can say.

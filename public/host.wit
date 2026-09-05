@@ -1,141 +1,110 @@
 package ironlark:host@0.1.0;
 
-interface log {
-  enum level { trace, debug, info, warn, error }
-  log: func(lvl: level, msg: string);
-}
+/// Shared vocabulary. The wire error is minimal and growable on purpose: a WIT
+/// variant cannot grow a case without an ABI break, so the rich taxonomy lives
+/// in the SDK and a new error kind is a new `code`, never a contract change.
+interface types {
+  record error { code: u32, message: string, data: list<u8> }
 
-// Server -> client bytes on a declared channel, to every peer or to one.
-//
-// A channel is the same declaration `signal` uses, and follows the same rule: a
-// bare name is one of the CALLER's own `[declares] channels` and the host
-// qualifies it to `<caller>/channel/<name>`; a name carrying `:` is another
-// mod's, taken as written. The qualified id crosses the wire and the receiving
-// host delivers it to the declaring mod's client half alone, which is why two
-// addons may both name a channel `value` without hearing each other.
-interface broadcast {
-  send: async func(channel: string, data: list<u8>) -> result<_, string>;
-  send-to: async func(player-id: string, channel: string, data: list<u8>) -> result<_, string>;
-}
+  /// A 128-bit value, carried as two halves because the ABI has no wider
+  /// integer. Named rather than paired: nothing an author can see hands out a
+  /// value whose parts are told apart by position.
+  record uuid { high: u64, low: u64 }
 
-// Client -> server request, answered in `server-api.handle-rpc`. `method` is a
-// bare name the CALLING mod declared under `[declares] methods`; the host
-// qualifies it and delivers the call to the one mod that declared it. A name
-// carrying `:` names another mod's method. An undeclared name is refused here,
-// rather than becoming a call every loaded mod is asked to answer in turn.
-interface rpc-out {
-  call: async func(method: string, args: list<u8>) -> result<list<u8>, string>;
-}
+  /// The platform account: one identity UUID, 128-bit because a UUID is.
+  /// Platform-global, minted centrally, never truncated.
+  type user-id = uuid;
+  /// Server-owned and server-local persona; the platform neither stores nor
+  /// links it. Unique within its server only, opaque to a mod, the save key.
+  /// Personas are not built: every read answers none, and the option is here
+  /// so a mod written now keys correctly when they arrive.
+  type profile-id = uuid;
+  /// Never reused within the session that issued it, and present for every
+  /// participant including bots. Never a save key, and nothing about it
+  /// outlives the session that minted it.
+  type session-id = u64;
+  /// Generational per instance: entity ids are reused, the token is not, so a
+  /// stale holder can never address this tick's stranger.
+  type instance-token = u64;
 
-interface ui {
-  set-overlay-text: func(text: string);
-}
+  /// Compact ids: names resolve once (see `resolve`), hot verbs take the id.
+  /// An id lives for the session that issued it. Never persisted, never a
+  /// save key. The aliases are structural at the WIT layer: the number carries
+  /// no kind, so each verb reads it in the table its own kind keeps.
+  type signal-id = u32;
+  type request-id = u32;
+  /// A declared hook, engine-invoked or author-defined. It arrives with the
+  /// dispatch instead of being resolved by name: the declarations mint it, so
+  /// `resolve` has no hook function.
+  type hook-id = u32;
+  type sound-id = u32;
+  type component-id = u32;
+  /// One dotted path within one component, numbered on first resolve.
+  type field-id = u32;
+  /// An enabled mod, as the stamped origin of a signal. Policy ("only the
+  /// gamemode commands me") is one integer compare against a resolved id.
+  type source-id = u32;
 
-// One-shot sound playback.
-//
-// `sound` follows the rule every name-taking import follows: a bare name is one
-// of the CALLER's own `[declares] sounds` and the host qualifies it to
-// `<caller>/sound/<name>`; a name carrying `:` is another mod's, taken as
-// written. `bus` is one of the host-published buses a mod may emit into:
-// "effects", "environment", "music" or "interface". "voice" is the host's and
-// is refused, because a declared sound is not a voice. `params` is a
-// named-value list so it can grow without a break; the one name read today is
-// "volume", from 0.0 to 1.0 and clamped.
-//
-// In the server realm every participant hears it; in the client realm it is
-// this machine's alone. What is heard is still the listener's decision: a
-// muted addon, a silenced bus or a full bus drops the sound without telling
-// the caller, because the same sound is playing for everyone who did not
-// silence it.
-interface audio {
-  play: async func(sound: string, bus: string, params: list<tuple<string, f32>>) -> result<_, string>;
-}
+  /// One raised event, for the whole life of that event across both realms:
+  /// minted once where it is born, never per mod that hears it. A v7 UUID, so
+  /// it is already a valid trace identifier and needs no translation.
+  type event-id = uuid;
 
-// The session roster: the server-resolved facts about a
-// participant, as named string values. Read-only — the host owns the table,
-// fills it on join and drops the row on leave; mods never hold a copy.
-interface profile {
-  // Every value for one player, today exactly the display name under "name".
-  // An unknown player is an empty list. Names are not unique and are never
-  // an identity: address players by their id, show them by their name.
-  get-all: async func(player-id: string) -> list<tuple<string, string>>;
-}
+  /// Who caused an event. Five cases, closed: it answers WHO, so a node (a
+  /// WHERE) and a timer (a WHEN) are deliberately absent — behind a timer
+  /// stands the mod that armed it. No case carries a handle: authority is the
+  /// dispatcher's to grant, never a passenger on a fact.
+  variant cause {
+    /// The tick, map load and unload, physics, the default spawn.
+    engine,
+    /// A participant, as the session id. A client mod's move is this too:
+    /// everything from a client arrives bound to the participant sending it.
+    player(session-id),
+    /// Another mod's server half, as the host-stamped source id.
+    mod(source-id),
+    /// A human with server authority, acting out of band. Which one is an
+    /// audit fact and arrives as its own function.
+    operator,
+    /// An entitlement, a settlement, a ban.
+    platform,
+  }
 
-// Server-realm entity verbs. A body is just an entity a
-// controller drives; creation and control are separate. The verb set is fixed
-// and generic: capability grows by whitelisting components (data), never by
-// adding verbs.
-interface entity {
-  // Opaque host-issued handle to a spawned entity. Mods cannot fabricate one.
-  resource handle;
+  /// What every hook but `init` receives first. Three fields and they are
+  /// final: a record's field set cannot grow, so everything later about an
+  /// event arrives as a function taking the id.
+  record context {
+    /// This event's identity; every function about the event takes it.
+    id: event-id,
+    /// The tick the event happened on. Not reconstructable afterwards, which
+    /// is why it is carried: judging a shot, reconciling a prediction and
+    /// re-sorting two events delivered out of order all need it.
+    raised-at: u64,
+    /// The tick this handler is running on. Equal to `raised-at` only when
+    /// nothing queued in between.
+    now: u64,
+  }
 
   record vec3 { x: f32, y: f32, z: f32 }
-  record spawn-transform { position: vec3, yaw: f32 }
-
-  // Spawn an entity from an archetype at a transform; returns its handle, or an
-  // error (e.g. unknown archetype). A bare `archetype` names one of the CALLER's
-  // own archetype declarations and the host qualifies it to
-  // `<caller>/archetype/<name>`; a name carrying `:` is taken as written and
-  // names another mod's — `ironlark:core:balloons/archetype/balloon`. Both
-  // resolve through the content registry. A host-published name
-  // carries no `:` at all — `character` spawns the built-in character body —
-  // and the caller's own declaration is tried FIRST, so a name the host
-  // publishes can never make a mod's archetype of that name unspawnable by its
-  // author. Registry entities replicate to every peer automatically.
-  //
-  // What you spawn is YOURS: the host records you as its owner, and that is what
-  // every other verb here checks. Spawning another mod's archetype
-  // places its content, not its behaviour — the instance is yours to move and
-  // remove, while its touch and use events go to the mod that declared the
-  // archetype and wrote the handlers for it.
-  spawn: async func(archetype: string, at: spawn-transform) -> result<handle, string>;
-
-  // Bind a player controller to a body: control is `Controller -> Body`, SEPARATE
-  // from creation — spawn an entity, THEN control it. `player` is a
-  // player's user id. On the host: the own local player's body becomes the local
-  // player (camera + input); a remote player's body becomes the host's authoritative
-  // simulation body for that client — driven by its input and broadcast via
-  // WorldSnapshot. Deferred hard domino: the remote client still spawns its own
-  // predicted body rather than instantiating this host-controlled one.
-  //
-  // Only the session's gamemode may possess, and no configuration can
-  // grant this to anything else: binding a player to a body takes that player's
-  // camera and input. The target must be a body; a body already possessed is
-  // released first, so one body never carries two controllers.
-  control: async func(player: string, entity: borrow<handle>) -> result<_, string>;
-
-  // Release an entity from its controller (inverse of `control`), and likewise
-  // the gamemode's alone.
-  release: async func(entity: borrow<handle>) -> result<_, string>;
-
-  // Despawn an entity (and its descendants — e.g. a glTF scene's children),
-  // destroying it in the world. Takes the handle by value (owned, NOT borrow):
-  // despawn is the inverse of `spawn`, so it CONSUMES the handle — the entity is
-  // gone and the handle is spent, which prevents use-after-despawn. Errors if the
-  // entity no longer exists.
-  //
-  // Only the mod that SPAWNED an entity may destroy it — narrower than the other
-  // verbs, because declaring an archetype lets you drive an instance while the
-  // instance exists because someone else asked for it. An operator can grant this
-  // across mods for a janitor or a moderation tool; nothing reaches a player's
-  // body. A refused despawn spends the handle too, since the verb takes it owned
-  // whether or not the host obeys: `find` it again to address the entity.
-  despawn: async func(entity: handle) -> result<_, string>;
-
   record quat { x: f32, y: f32, z: f32, w: f32 }
   record rgba { r: f32, g: f32, b: f32, a: f32 }
 
-  // The value written into a component field: a closed vocabulary of primitive
-  // shapes the host knows how to apply. Adding a settable *component* is data (a
-  // registration), not a WIT change; extending this *shape* vocabulary is the rare
-  // exception that does touch the WIT.
-  //
-  // Values are checked before anything applies, on every route: numbers,
-  // vectors, quaternions and color channels must be finite; text is capped at
-  // 256 bytes (refused whole, never truncated), may not contain control
-  // characters, and — when non-empty — must put at least one visible character
-  // on screen. A field may appear once per call. A write restating the value a
-  // field already holds is dropped: it changes nothing and replicates nothing.
+  /// A thing the physics world reports: a spatial query answers with these and
+  /// a contact edge arrives carrying one. One vocabulary, so the same three
+  /// cases mean the same thing whether they were asked for or arrived on an
+  /// event.
+  variant physics-object {
+    /// A participant's body, as the number that addresses them.
+    player(session-id),
+    /// The owning mod's full entity id; "" when no enabled archetype owns it
+    /// or its owner never gave it one.
+    entity(string),
+    /// The map's own geometry.
+    map-geometry,
+  }
+
+  /// The closed value vocabulary the host applies to component fields. A new
+  /// settable component is a registration, not a WIT change; a new shape here
+  /// is the rare exception that is.
   variant field-value {
     number(f32),
     boolean(bool),
@@ -144,130 +113,225 @@ interface entity {
     quat(quat),
     rgba(rgba),
   }
+}
 
-  // One assignment: a dotted field path within a component and the value to write
-  // at that path (e.g. path "translation" with a vec3 value).
+/// What a hook may ask about the event it is handling, past the three facts the
+/// context carries. Each takes the event id and answers about THAT event; an id
+/// that is not the one in flight is refused, never answered for the current one.
+/// Synchronous like `resolve`: these read state the store already holds.
+interface event {
+  use types.{error, cause, event-id, instance-token};
+
+  /// Who caused this event. Absent where the realm cannot name one: a client
+  /// half does not know the participant at its own machine.
+  cause-of: func(event: event-id) -> result<option<cause>, error>;
+
+  /// The subject instance's generational token, for a handler that holds a
+  /// handle across events. An event with no subject refuses.
+  instance-of: func(event: event-id) -> result<instance-token, error>;
+}
+
+/// Names resolve once to compact ids, at init; one numbering serves every
+/// guest and the wire, assigned when the enabled set publishes and carried by
+/// the session announce. A bare name is the caller's own declaration; a name
+/// with `:` is a declared cross-mod reference. An undeclared name is
+/// refused here, at init, not discovered dead mid-session.
+interface resolve {
+  use types.{error, signal-id, request-id, sound-id, component-id, field-id, source-id};
+
+  signal: func(name: string) -> result<signal-id, error>;
+  request: func(name: string) -> result<request-id, error>;
+  sound: func(name: string) -> result<sound-id, error>;
+  /// A host-published accessible component.
+  component: func(name: string) -> result<component-id, error>;
+  /// A dotted path within a component; the world validates it at first use.
+  field: func(component: component-id, path: string) -> result<field-id, error>;
+  /// An enabled mod's full id, for signal-origin policy compares.
+  source: func(name: string) -> result<source-id, error>;
+}
+
+/// The participant: whoever occupies the player role, backed by a User or
+/// not. Host-owned, lent per event as `borrow<player>` — the stamped identity
+/// an author cannot fabricate or store. Additive methods (team, role,
+/// spectator) are free later on an import resource; never flatten it.
+interface player {
+  use types.{error, user-id, profile-id, session-id};
+  use entity.{handle as entity-handle};
+
+  resource player {
+    /// Session-immutable snapshot; a bot has none.
+    user: func() -> option<user-id>;
+    /// Live read — the persona hot-swaps mid-session, so never cache it
+    /// across an await. A server-owned NPC may have a profile and no user.
+    profile: async func() -> option<profile-id>;
+    session: func() -> session-id;
+    /// The controlled body, while handling this participant's event.
+    body: async func() -> result<entity-handle, error>;
+  }
+}
+
+interface log {
+  enum level { trace, debug, info, warn, error }
+  /// Message length is capped and delivery throttled per mod; the refusal
+  /// carries the published cap.
+  log: func(lvl: level, msg: string);
+}
+
+/// The signal bus: a raise announces something to whoever subscribed
+/// to that name, the raiser included. No addressee — the name's own declaration
+/// says which realm's bus it lands on and whether it crosses to the client
+/// realms. One bus per realm on each machine, and both realms raise here.
+/// Ownership is not enforced; existence is. Payloads are capped; an over-cap
+/// raise is refused with the cap in the code.
+interface signal {
+  use types.{error, signal-id};
+
+  /// Synchronous, because a raise awaits nothing: success means the host took
+  /// it, and overload — a full queue, or too many raises in one tick — is a
+  /// typed refusal on every route. A raise made before the realm's mods are all
+  /// up queues until they are.
+  signal: func(signal: signal-id, payload: list<u8>) -> result<_, error>;
+
+  /// Idempotent, no replay; subscriptions die with the mod.
+  subscribe: func(signal: signal-id) -> result<_, error>;
+}
+
+/// The narrowed raise: the same announcement delivered to one participant's
+/// machine instead of every one of them. Its own interface so the client world
+/// simply does not import it — a client half signals its own machine, and the
+/// combination stays unoccupied rather than refused at run time.
+interface signal-to {
+  use types.{error, signal-id, session-id};
+
+  /// Synchronous and capped exactly as `signal.signal`.
+  signal-to: func(player: session-id, signal: signal-id, payload: list<u8>) -> result<_, error>;
+}
+
+/// The addressed act: one awaited answer from the half of the mod that declared
+/// the name, answered in `server-api.on-request`. Client to server is the
+/// direction served, so the client world imports this and the server world does
+/// not.
+interface request {
+  use types.{error, request-id};
+
+  /// The one awaited verb in the contract. Payload and answer are capped, and
+  /// the refusal carries the cap.
+  request: async func(request: request-id, payload: list<u8>) -> result<list<u8>, error>;
+}
+
+interface ui {
+  set-overlay-text: func(text: string);
+}
+
+/// One-shot playback: server realm plays for every participant,
+/// client realm for this machine alone. A muted mod, silenced bus or full
+/// bus drops the sound without telling the caller.
+interface audio {
+  use types.{error, sound-id, field-value};
+
+  /// The mixing lanes a mod may play on. The host's voice lane is absent on
+  /// purpose: the host writes voice, a mod does not, and voice arrives as its
+  /// own verb rather than as a case here.
+  enum bus { effects, environment, music, %interface }
+
+  /// The host reads one param, "volume": number 0.0..=1.0, clamped.
+  play: async func(sound: sound-id, bus: bus, params: list<tuple<string, field-value>>) -> result<_, error>;
+}
+
+/// The session: who is connected, and the server-resolved facts
+/// about one of them as named string values. Read-only; the host owns the table.
+interface session {
+  use types.{session-id};
+
+  /// Everyone connected right now. A snapshot: someone may arrive or leave
+  /// before the caller acts on the answer.
+  participants: async func() -> list<session-id>;
+
+  /// The one fact served is the display name, under "name". Unknown = empty
+  /// list. Names are not identities: address by id, show by name.
+  get-all: async func(player: session-id) -> list<tuple<string, string>>;
+}
+
+/// Server-realm entity verbs. Creation and control are
+/// separate; the verb set is fixed and capability grows by whitelisting
+/// components, never by adding verbs. Reach is the ownership rule's.
+interface entity {
+  use types.{error, session-id, vec3, field-value, component-id, field-id};
+
+  /// Opaque host-issued handle; mods cannot fabricate one.
+  resource handle;
+
+  record spawn-point { position: vec3, yaw: f32 }
+
+  /// A bare archetype is the caller's own declaration; `:` names another
+  /// mod's. What you spawn is yours to move and remove; its interact and
+  /// contact events go to the declaring mod.
+  spawn: async func(archetype: string, at: spawn-point) -> result<handle, error>;
+
+  /// Gamemode-only: binds a participant's camera and input to a
+  /// body. An already-possessed body is released first.
+  control: async func(player: session-id, entity: borrow<handle>) -> result<_, error>;
+
+  /// Inverse of `control`, likewise the gamemode's alone.
+  release: async func(entity: borrow<handle>) -> result<_, error>;
+
+  /// Consumes the handle: the entity is gone and the handle is spent, even on
+  /// refusal. Only the spawner may despawn.
+  despawn: async func(entity: handle) -> result<_, error>;
+
   record component-field {
-    path: string,
+    field: field-id,
     value: field-value,
   }
 
-  // Write fields into one registered component on an entity. `component` is the
-  // component's registered name (e.g. "transform"); each field patches one path
-  // within it. Only whitelisted components are writable. An insertable row
-  // (e.g. "label") is attached by its first write: the host builds the row's
-  // registered defaults, applies your fields over them, and inserts the result
-  // whole — one call, no declaration, no attach verb. A row that is not
-  // insertable keeps erroring when the entity lacks the component. Errors on a
-  // forbidden or unknown component, an unknown field path, a value-shape
-  // mismatch, or a missing entity. This single verb stands in for per-property
-  // setters: new settable components and fields arrive by registration, never
-  // by new verbs.
-  //
-  // You may write an entity you spawned, and an instance of an archetype you
-  // declare wherever it came from. A player's body only while you are handling an
-  // event about that player — the touch or press that reached you —
-  // or, for decoration rows alone, after declaring the row under `body-rows` in
-  // your manifest: a declared row (e.g. "label") is writable on any
-  // player's body, first write included, while pose, reads and despawn stay
-  // out of reach. Anything else needs an operator's grant — and a grant
-  // writes the components an entity carries, never attaches one.
-  //
-  // A writer-scoped row (e.g. "label") also answers to the mod that wrote it:
-  // while its value is off the row's defaults, only that mod may change it.
-  // Anyone with write reach may still reset it to the defaults, which also
-  // releases it — writing the defaults back IS the release; there is no
-  // release verb.
+  /// Write fields into one registered component. Only whitelisted components;
+  /// an insertable row is attached by its first write. A player's body only
+  /// while handling that player's event, or a declared row. A
+  /// write restating the held value is dropped.
   set-component: async func(
     entity: borrow<handle>,
-    component: string,
+    component: component-id,
     fields: list<component-field>,
-  ) -> result<_, string>;
+  ) -> result<_, error>;
 
-  // Read fields from one registered component on an entity — the inverse of
-  // set-component. `component` is the component's registered name (e.g. "transform");
-  // each entry in `paths` is a dotted field path to read (e.g. "translation"). Returns
-  // one component-field per requested path, echoing the path with its current value, so
-  // a result feeds straight back into set-component. The same whitelist gates which
-  // components are readable. Errors on a forbidden or unknown component, an unknown
-  // field path, a value shape the vocabulary can't represent, or a missing entity.
-  //
-  // Gated exactly like set-component, reading included: a standing read of every
-  // player's position is a positional feed of the whole server, so a body is
-  // readable only while you are handling that player's event.
+  /// Inverse of `set-component`, gated exactly like it, reads included: a
+  /// standing read of every body is a positional feed of the whole server.
   get-component: async func(
     entity: borrow<handle>,
-    component: string,
-    paths: list<string>,
-  ) -> result<list<component-field>, string>;
+    component: component-id,
+    fields: list<field-id>,
+  ) -> result<list<component-field>, error>;
 
-  // Resolve a named descendant — a part — of an entity by its stable name path
-  // ("body/skin" nests; names come from the authored scene, e.g. glTF node
-  // names, so a path survives a model re-export). Parts address into an
-  // archetype's hierarchy: the returned handle feeds set-component /
-  // get-component to touch a child's transform or material. Errors while the
-  // part does not exist — a scene entity's children appear when its async scene
-  // load completes, so a caller retries on a later tick.
-  part: async func(entity: borrow<handle>, path: string) -> result<handle, string>;
+  /// Resolve a named descendant by its authored scene path ("body/skin").
+  /// Errors while the part does not exist yet; retry on a later tick.
+  part: async func(entity: borrow<handle>, path: string) -> result<handle, error>;
 
-  // Give an entity a stable, findable id. The host records the calling mod as the
-  // owner, so a mod can only name within its own namespace. Ids are
-  // `/`-delimited (e.g. "balloon/alice-1") so related entities share a prefix.
-  // Re-identifying the same entity moves YOUR id for it; an id a different live
-  // entity already holds is rejected. Handles are ephemeral (spent on despawn,
-  // lost on reload) — an id is the durable way to reach an entity again.
-  //
-  // Naming is per mod and additive: one entity carries at most one name from each
-  // mod, and yours never displaces another's. So the mod that placed a prop and
-  // the mod whose archetype it is can both reach it, and neither can take the
-  // other's address away.
-  //
-  // You may name an entity you spawned, or an instance of an archetype you
-  // declare. Not an unowned one — map content is the host's — and never a
-  // player's body: handling someone's event lets you affect them, not file them
-  // under a name of your own.
-  identify: async func(entity: borrow<handle>, id: string) -> result<_, string>;
+  /// Give an entity a stable, findable id in the caller's namespace. An id
+  /// is per mod and additive, and it routes nothing: an event reaches the mod
+  /// that declared the archetype, and the id only travels with it. A mod may
+  /// give an id to a body it spawned itself, as the bundled `freeroam` does;
+  /// map content never takes one.
+  set-id: async func(entity: borrow<handle>, id: string) -> result<_, error>;
 
-  // Resolve an id (or id prefix) to the entities carrying it, within the caller's
-  // namespace. A full id (e.g. "balloon/alice-1") returns that one entity; a prefix
-  // (e.g. "balloon") returns every entity beneath it in the `/`-delimited hierarchy;
-  // an empty string returns all of the addon's identified entities. Read-only: it
-  // resolves against a host-side index and does not touch the simulation.
-  //
-  // Only names THIS mod gave, so it never reaches across mods. An entity another
-  // mod placed from your archetype answers here once you have named it — which is
-  // how a content mod drives instances it did not spawn.
-  find: async func(pattern: string) -> result<list<handle>, string>;
+  /// Resolve an id or `/`-prefix to entities, within the caller's own ids.
+  find: func(pattern: string) -> result<list<handle>, error>;
 
-  // Resolve a player's controlled body (the controller -> body relation) to an
-  // entity handle. This is how a mechanic mod reaches the
-  // player a hook handed it (on-contact, on-interact) to apply an effect —
-  // teleport, launch — without the gamemode brokering every move.
-  // Errors while the player controls no body.
-  //
-  // Call it with the player the event you are handling is about: what the handle
-  // permits is checked at each use, against that same player. Holding
-  // the handle afterwards buys nothing, so there is no reason to keep one.
-  //
-  // A cosmetic write on a body does not reach other peers — the stand-in a client
-  // builds for a remote player is outside the component-update path — so a recolor
-  // here is visible to nobody but the host.
-  body-of: async func(player: string) -> result<handle, string>;
+  /// The one entity carrying exactly this id, in the caller's own ids.
+  /// `find` matches a family; this matches one id. Absent means nothing holds
+  /// it, which includes an instance that was never given one.
+  by-id: func(id: string) -> result<option<handle>, error>;
+
+  /// The controller -> body relation for the participant whose event is being
+  /// handled; what the handle permits is checked at each use.
+  body-of: async func(player: session-id) -> result<handle, error>;
 }
 
-// Read-only spatial queries over the physical world: the sensing
-// counterpart of contact events. Sees map colliders and flagged-entity
-// proxies (archetypes with `interact`/`contact`); character bodies are not
-// raycastable. A hit on another mod's entity reports geometry but no handle —
-// cross-mod reach stays the signal bus, matching `find`'s namespace scoping.
+/// Read-only spatial queries: the sensing counterpart of contact
+/// events. A hit on a foreign entity reports geometry but no handle.
 interface spatial {
+  use types.{vec3, quat, session-id, physics-object};
   use entity.{handle};
 
-  record vec3 { x: f32, y: f32, z: f32 }
-
-  // The closest thing a ray hit: where and how far, plus the entity when the
-  // hit resolved to one of the CALLER's own identified entities (absent for
-  // map geometry and foreign entities — they occlude, nothing more).
   record ray-hit {
     entity: option<handle>,
     position: vec3,
@@ -275,186 +339,172 @@ interface spatial {
     distance: f32,
   }
 
-  // Cast a ray and return the closest hit within `max-distance`, if any.
+  /// The probe an intersection query is asked with. The same four kinds an
+  /// archetype declares in its manifest, so one shape vocabulary serves both.
+  /// Every length is a full extent; a capsule's length is the cylindrical
+  /// segment alone.
+  variant shape {
+    %box(vec3),
+    sphere(f32),
+    capsule(tuple<f32, f32>),
+    cylinder(tuple<f32, f32>),
+  }
+
   raycast: async func(origin: vec3, direction: vec3, max-distance: f32) -> option<ray-hit>;
 
-  // The caller's own identified entities whose collision intersects the
-  // sphere. Result count is capped like `find`'s.
-  overlap: async func(center: vec3, radius: f32) -> list<handle>;
+  /// Everything in the world the probe touches, placed at `at` and turned by
+  /// `facing`. Intersecting, not containing: a body the probe catches by an
+  /// edge is in the answer. The probe is not in the world and blocks nothing.
+  ///
+  /// Identity only, never a handle: acting on one of the caller's own goes
+  /// through `entity.by-id`, and reach is the ownership rule's to decide.
+  intersections: async func(shape: shape, at: vec3, facing: quat) -> list<physics-object>;
 }
 
-// The signal bus: observe-only mod-to-mod events over host-routed
-// byte channels. Signals are facts, not decisions — no consume, no override,
-// subscriber order undefined; decision chains belong to the composition hook
-// layer. Server realm only.
-//
-// A channel is declared in `mod.toml` under `[declares] channels`, and a mod
-// never writes its own id: it says `pressed` and the host makes that
-// `<caller>/channel/pressed`. A name carrying `:` is taken exactly as written
-// and names a channel the caller does not own — the one place a mod
-// legitimately writes an id it did not mint, and the reason ownership is NOT
-// enforced on a channel: a gamemode emitting on another mod's command channel
-// is the intended shape, not an escape from it.
-//
-// Both halves must name a channel SOMEONE declared. `subscribe` used to accept
-// any string and return ok, so a renamed channel left a subscriber that never
-// fired and a sender nobody heard, with nothing saying why; now each is
-// refused where it is written.
-interface signal {
-  // Fan `payload` out to every subscriber of `channel`, excluding the sender
-  // (no self-delivery — kills the trivial feedback loop). Delivery is reliable
-  // in the normal case and sheds loudly per overloaded subscriber; it never
-  // stalls the simulation. Emits fired while server mods are still loading are
-  // queued and flushed once all of them are up, so an init-time emit cannot
-  // race another mod's init-time subscribe. Errors on an empty or oversized
-  // channel name, an oversized payload, or an overflow of that pre-load queue.
-  emit: func(channel: string, payload: list<u8>) -> result<_, string>;
-
-  // Deliver future emits on `channel` to this mod's `server-api.on-signal`.
-  // Idempotent; no replay — a signal is a moment, a late subscriber misses
-  // history by design. Subscriptions die with the mod. Errors on an empty or
-  // oversized channel name.
-  subscribe: func(channel: string) -> result<_, string>;
-}
-
-// Host-owned, read-only queries over the loaded map (mapping track). Lets a
-// gamemode compute spawn placement from the map's data instead of taking the host
-// default. Grows into zones / named-entity / surface queries later.
+/// Host-owned, read-only queries over the loaded map.
 interface map-api {
-  record vec3 { x: f32, y: f32, z: f32 }
-  record spawn-transform { position: vec3, yaw: f32 }
+  use types.{vec3};
+  record spawn-point { position: vec3, yaw: f32 }
+  /// What the loaded map suggests, not where anyone will stand: the session's
+  /// gamemode decides that and is free to ignore every one of these. Yaw in
+  /// radians, feeding straight back into `entity.spawn`. Never empty: a map
+  /// declaring none yields the engine's own fallback point.
+  spawn-points: async func() -> list<spawn-point>;
+}
 
-  // The loaded map's declared spawn points (position + facing; yaw in RADIANS, so
-  // the values feed straight back into entity.spawn). Returns a single
-  // engine-default fallback when the map declares none, so a gamemode always has
-  // at least one usable spawn.
-  list-spawns: async func() -> list<spawn-transform>;
+/// Placement of arriving participants. Only the session's gamemode may command
+/// it; anyone else is refused with the answer, not in a log.
+///
+/// Commands rather than a setting: what the session does with placement will
+/// grow, and a frozen status could not grow with it.
+interface spawn {
+  use types.{error};
+
+  /// The host places every arrival in a body of its own accord. On unless a
+  /// gamemode turns it off.
+  enable-auto: async func() -> result<_, error>;
+
+  /// The host stops placing arrivals, leaving them to the gamemode. Nobody
+  /// already in the session moves.
+  disable-auto: async func() -> result<_, error>;
 }
 
 interface server-api {
-  // Defined locally: this wit-parser rejects cross-interface `use` (same reason
-  // map-api carries its own copy).
-  record vec3 { x: f32, y: f32, z: f32 }
+  use types.{error, session-id, signal-id, request-id, source-id, vec3, context, physics-object};
+  use player.{player};
+  use entity.{handle as entity-handle};
 
+  /// The one export that is not an event: nothing has happened yet, so there
+  /// is no context to take.
   init: async func();
-  on-player-join: async func(player-id: string);
-  on-player-leave: async func(player-id: string);
-  handle-rpc: async func(player-id: string, method: string, args: list<u8>) -> result<list<u8>, string>;
 
-  // Fixed-rate server tick. The server realm has no render frames (a headless server
-  // renders nothing), so periodic mod logic runs on a fixed cadence, not per frame.
-  // `dt` is the seconds since the previous update, so motion stays rate-independent.
-  // The host dispatches this to every loaded server-mod and does NOT wait for it: a
-  // slow update is skipped until it finishes, and never stalls the simulation.
-  update: async func(dt: f32);
+  /// A node handoff resumes a mod instead of re-initing it. The migrated
+  /// case carries an opaque blob a real meshing design fills later: the case
+  /// is frozen, the contents are free. Leaving carries no such case: a handoff
+  /// is not a departure, and the participant is still playing elsewhere.
+  variant arrival { fresh, migrated(list<u8>) }
+  variant leave-reason { quit, kicked, timeout }
 
-  // A player used (pressed interact on) an instance of one of this mod's
-  // interactable archetypes. The host raycasts authoritatively from the player's
-  // body and routes the hit to the mod that DECLARED the archetype — the one that
-  // wrote `interact = true` and this handler — whoever spawned the instance. Only
-  // declarations carrying `interact = true` arrive here.
-  //
-  // `target` is this mod's own name for the instance when it named one, and
-  // otherwise the bare archetype name, so a mod hears something it recognises for
-  // an instance another mod placed. A name feeds straight into entity.find.
-  //
-  // `hit-point` is where the use-ray struck, in world space — on a multi-part
-  // entity it tells WHICH part was pressed; `distance` is from the presser's
-  // body to that point, the same measure the host's reach limit enforces.
-  //
-  // While this handler runs, `player-id` is the one player whose body this mod may
-  // reach: resolve it with entity.body-of and act inside the handler.
-  on-interact: async func(player-id: string, target: string, hit-point: vec3, distance: f32);
+  on-join: async func(ctx: context, player: borrow<player>, arrival: arrival);
+  on-leave: async func(ctx: context, player: borrow<player>, reason: leave-reason);
 
-  // `method` is the bare name this mod declared: routing already established
-  // whose method it is, and a mod never has to recognise its own full id.
-  //
-  // A signal arrived on a channel this mod subscribed to. `source`
-  // is the emitting mod's full `<author>:<addon>:<mod>` id, stamped by the host
-  // rather than supplied by the sender — unforgeable, so
-  // policy ("only the gamemode commands me", "facts only from the protocol
-  // owner") is one comparison. The payload carries everything the handler
-  // needs: a signal does not synchronize with the sender's queued entity
-  // verbs, so "hear signal, then read the world" is an anti-pattern.
-  on-signal: async func(channel: string, source: string, payload: list<u8>);
+  /// Fixed-rate server tick; the tick number is `ctx.raised-at`. A slow
+  /// handler is skipped until it finishes, never stalling the simulation.
+  on-tick: async func(ctx: context, dt: f32);
 
-  // What physically touched one of this mod's contact entities —
-  // instance-exact, so "react only to THIS player / THAT balloon" is one
-  // comparison in the handler.
-  variant contact-party {
-    // A controlled body: the controlling player's user id.
-    player(string),
-    // Another contact entity, reported in full — the naming mod's id, the
-    // `entity` kind and the local name (`<author>:<addon>:<mod>/entity/<local>`),
-    // because the local half alone means nothing outside its own namespace. An
-    // entity may carry a name from several mods, so it is reported under the mod
-    // whose archetype it is: the same identity an event about it routes to. ""
-    // when it belongs to no enabled archetype.
-    entity(string),
-    // The map's own geometry ("world" is a reserved WIT word).
-    map-geometry,
-  }
+  /// The handle reaches the entity without a round-trip; the id keeps
+  /// prefix family-scan ("pair/3/a" parses). The handle is always present:
+  /// an instance that died between raise and dispatch still arrives
+  /// with one, and its verbs are what refuse. The id is "" when this mod
+  /// never gave the instance one.
+  record target-ref { entity: option<borrow<entity-handle>>, id: string }
 
-  // Which side of a touch interval this event marks. Only the edges cross the
-  // boundary — never per-frame contact data; a mod that needs "while touching"
-  // holds the interval between the two.
+  /// A participant used one of this mod's interactable archetypes. While the
+  /// handler runs, that participant's body is in this mod's reach.
+  on-interact: async func(ctx: context, player: borrow<player>, target: target-ref, hit-point: vec3, distance: f32);
+
+  /// Only the edges cross the boundary, never per-frame contact data.
   enum contact-edge { started, ended }
 
-  // Physical touch on an instance of one of this mod's contact archetypes
-  // (declarations carrying `contact = true`). Routed like `on-interact`:
-  // to the mod that declared the archetype, whoever spawned the instance, and
-  // `target` is this mod's own name for it or the bare archetype name. When both
-  // parties are contact entities, each declaring mod hears about its own. `point`
-  // is where the touch sits in world space (on `ended` — where the other party
-  // separated to).
-  //
-  // When `other` is a player, that player is the one whose body this mod may
-  // reach while this handler runs — which is what a pad, a trap or a
-  // teleporter needs, and all it needs.
-  on-contact: async func(target: string, other: contact-party, point: vec3, edge: contact-edge);
+  /// Physical touch on one of this mod's contact archetypes,
+  /// routed to the declaring mod whoever spawned the instance.
+  on-contact: async func(ctx: context, target: target-ref, other: physics-object, point: vec3, edge: contact-edge);
+
+  /// `request` is one this mod declared; routing already established whose it
+  /// is. `player` is the one whose client half asked, lent for this call.
+  /// Payload and answer are capped, the refusal carries the cap.
+  on-request: async func(ctx: context, player: borrow<player>, request: request-id, payload: list<u8>) -> result<list<u8>, error>;
+
+  /// A raised signal this mod subscribed to. The payload carries everything
+  /// needed: a signal does not synchronize with the raiser's queued entity
+  /// verbs. The source is host-stamped, unforgeable, and compares as one
+  /// integer.
+  on-signal: async func(ctx: context, signal: signal-id, source: source-id, payload: list<u8>);
+
+  /// Verdict of a structural hook. `amend` is present-but-reserved: the
+  /// value-carrying case is the one shape that cannot be added later.
+  variant verdict { allow, deny, mutate(list<u8>) }
+
+  /// The structural hook set, declared at once and unfired until
+  /// its mechanism lands; an unfired export costs one empty function. Their
+  /// real parameters are that record's design and its own break.
+  on-body-created: async func(ctx: context) -> verdict;
+  on-body-destroyed: async func(ctx: context) -> verdict;
+  on-entity-spawned: async func(ctx: context) -> verdict;
+  on-entity-despawned: async func(ctx: context) -> verdict;
+  on-component-changed: async func(ctx: context) -> verdict;
+  on-map-loaded: async func(ctx: context) -> verdict;
+  on-map-unloaded: async func(ctx: context) -> verdict;
+  on-session-started: async func(ctx: context) -> verdict;
+  on-session-ended: async func(ctx: context) -> verdict;
+  on-possession-changed: async func(ctx: context) -> verdict;
+  /// Load-bearing: per-profile mod state re-keys on a hot-swap.
+  on-profile-swapped: async func(ctx: context) -> verdict;
+  /// The deferrable gate: the host holds its own default spawn.
+  body-spawn-requested: async func(ctx: context) -> verdict;
 }
 
 interface client-api {
+  use types.{signal-id, source-id, hook-id, context};
+
   init: async func();
+  on-tick: async func(ctx: context, dt: f32);
+  /// A raised signal this half subscribed to: this machine's own client bus and
+  /// the raises crossing from the server realm arrive through this one export.
+  /// The source is host-stamped, unforgeable, and compares as one integer.
+  on-signal: async func(ctx: context, signal: signal-id, source: source-id, payload: list<u8>);
 
-  // Bytes on one of this mod's declared channels, sent by a server mod via
-  // `broadcast`. `channel` is the BARE name: routing already established whose
-  // channel it is, and a mod never has to recognise its own full id.
-  on-message: async func(channel: string, data: list<u8>);
-
-  // An input action fired. Every name is one the HOST publishes, so it carries
-  // no `:` — a mod declares the ones it answers under `[declares] actions`, and
-  // only those mods are called. Declaring a name the host does not publish
-  // fails at session start rather than producing a handler that never runs.
-  on-input: async func(action: string);
-}
-
-// Host-owned gamemode/session settings a server-mod configures.
-interface gamemode {
-  // Toggle the host's default spawn-on-join (free-roam baseline). ON by
-  // default. A gamemode that owns placement calls set-default-spawn(false) in init(),
-  // then spawns via entity.spawn + entity.control from on-player-join.
-  set-default-spawn: func(enabled: bool);
+  enum input-edge { pressed, released }
+  /// `hook` names a declared hook — engine-invoked or author-defined, one
+  /// concept either way. The edge's own tick is `ctx.raised-at`: an edge
+  /// happens on the tick it happens on.
+  on-input: async func(ctx: context, hook: hook-id, edge: input-edge);
 }
 
 world server-mod {
   import log;
+  import resolve;
+  import event;
+  import player;
+  import session;
   import audio;
-  import broadcast;
   import entity;
-  import gamemode;
+  import spawn;
   import map-api;
-  import profile;
   import signal;
+  import signal-to;
   import spatial;
   export server-api;
 }
 
 world client-mod {
   import log;
+  import resolve;
+  import event;
+  import session;
   import audio;
   import ui;
-  import profile;
-  import rpc-out;
+  import signal;
+  import request;
   export client-api;
 }

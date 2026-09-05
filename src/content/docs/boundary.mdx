@@ -13,8 +13,8 @@ This page gets shorter. Its history is public, so you can check that against us.
 
 Every limit below is a limit of the engine as it stands, not of your approach. Each is
 cheap to hit and expensive to discover halfway through a build, so each one also says
-what does work instead — and, where it is knowable, whether what you build on the
-workaround survives.
+what does work instead — and, where something is planned, points at the one place
+promises live: [the roadmap](/roadmap/).
 
 ## Hosting
 
@@ -23,43 +23,37 @@ workaround survives.
 Hosting means running the game as the host. The session ends when you leave, so you
 cannot start one on a machine and leave it running.
 
-**Instead:** host from the game, with `--become-host`. **Your work survives:** an
-instance is configured by `config/server.toml`, and a dedicated server changes which
-process reads that file, not the file — see
-[Configuration](/server/configuration/).
+**Instead:** host from the game, with `--become-host`. Your configuration survives: an
+instance is described by `config/server.toml`, and a dedicated server changes which
+process reads that file, not the file — see [Configuration](/server/configuration/).
+Dedicated servers are committed → [Roadmap](/roadmap/).
 
 ## The mod surface
 
 ### No shooting, and no hitting a player with a ray
 
 `spatial::raycast` deliberately excludes character bodies. Rays see map geometry and
-the collision proxies of archetypes flagged `interact` or `contact` — nothing else.
+the collision proxies of archetypes flagged `interact` or `contact` — never a player.
 There is also no health anywhere in the engine.
 
 So: no hitscan weapons, no melee that resolves against a player, no deathmatch.
 
 **Instead:** a ray toward a player's position tells you whether the map occludes them
-— enough for line of sight, hide-and-seek and vision cones. The `watchman` reference
-mod is built on exactly that.
+— enough for line of sight, hide-and-seek and vision cones; the `watchman` reference
+mod is built on exactly that. And a shape probe is not a ray: `spatial::intersections`
+reports every participant the probe touches, by session id — presence in a volume,
+not a hit point.
 
 ### Proximity, not player-to-player touch
 
-Contact events fire for archetypes you flagged, and tell you when a player touched one
-of them. There is no player-to-player contact event, because neither party is a
+Contact events fire for archetypes you flagged, and tell you which participant touched
+one of them. There is no player-to-player contact event, because neither party is a
 flagged entity.
 
-**Instead:** compare body positions each tick. Distance is a subtraction, and
-`get-component` on `transform` gives you the numbers. Tag games are easy this way.
-
-### One input action, and it is a debug key
-
-There is no input system for mods. Exactly one action exists — the name `echo`, sent
-when **F** is pressed — and it reaches only the client halves that declared it under
-`[declares] actions`. You cannot bind a key, name an action of your own, or read
-movement input.
-
-**Instead:** trigger volumes for "do a thing here", and interact (**E**) for "use this
-object". Both are real mechanisms, not stand-ins.
+**Instead:** ask `spatial::intersections` with a probe around a point — every
+participant it catches comes back by session id, which is what a tag zone needs. For
+distances, the bundled `freeroam` gamemode publishes a player-positions fact over the
+signal bus, and the `watchman` reference mod ranges on exactly that.
 
 ### Elimination has no spectator
 
@@ -75,7 +69,8 @@ jail. It plays better anyway, because they can watch and heckle.
 The whole client-side presentation surface is `ui::set-overlay-text`. No panels, no
 images, no layout, no input widgets.
 
-**Instead:** a scoreboard is a formatted string.
+**Instead:** a scoreboard is a formatted string. A real UI surface is intended →
+[Roadmap](/roadmap/).
 
 ### No items, no attachments
 
@@ -83,128 +78,99 @@ There is no inventory, no held item, and no way to attach one entity to another.
 
 **Instead:** a "carried" object is one you move to follow its owner each tick.
 
-**What is coming** is attachment to named slots on a body, and a held item that travels
-with the events a player causes — so a mod can answer "what were they holding when they
-pressed this" without tracking it itself.
-
 ### Nothing a mod writes survives the session
 
 There is no storage of any kind. When the session ends, everything your mod knew is
 gone — scores, unlocks, who built what, where they left it.
 
 **Instead:** there is no workaround. A mod cannot reach a file or a network, so
-nothing can be smuggled out. Build things that are true for one session.
-
-**What is coming** is a key-value store of opaque bytes — store, load, delete and
-iterate — scoped per mod, and separately per map, per server and per player, with the
-host guaranteeing that one mod cannot read another's. You serialise your own state;
-the host stores the bytes.
-
-Where those bytes physically live will be the operator's choice, not yours and not
-ours: in memory for development, SQLite for a single server, Postgres for one that
-needs backups or shares state across instances. One interface, several backends,
-chosen in configuration. Swapping between them is no change to a mod.
-
-Relational, queryable state — the kind a web dashboard joins against — is a separate
-and later question. A blob in a database column is still a blob, so a backend swap
-does not deliver it.
+nothing can be smuggled out. Build things that are true for one session. Persistence
+is intended, and its shape is stated once, on the [roadmap](/roadmap/).
 
 ### No personas
 
-A player, their identity and their body are currently one and the same thing. One
-account, one character, one body, always.
+A player, their account and their body are currently one and the same thing. One
+account, one character, one body, always — so no character selection, no alt
+characters, and no permadeath that costs a character rather than an account.
 
-So there is no character selection, no alt characters, no permadeath that costs a
-character rather than an account, and no per-character saved state.
+The contract already carries the split: a mod can ask a player for its profile — the
+server-local persona — today, and the answer is none for everyone, so a mod written
+now keys correctly when personas arrive.
 
 **Instead:** treat the player as the character. It is the only shape available.
-
-**What is coming** is a split into three: the account, one or more personas belonging
-to it with exactly one active at a time, and the body a persona is currently driving.
-Personas will carry named traits with a declared visibility — public, owner-only, or
-server-only — and permadeath becomes destroying a persona while the account lives on.
+Personas are intended → [Roadmap](/roadmap/).
 
 ### Sound is one-shots only
 
-You can ship a sound and play it, and every listener hears it at one volume
-wherever they stand → [Playing a sound](/build/playing-sound/).
+You can ship a sound and play it at a volume you choose, and every listener hears it
+the same wherever they stand → [Sound](/modding/presentation/sound/).
 
 What does not exist is sound that has a place: a source anchored to an entity,
-audible by distance, still playing when someone joins halfway through. Nor
-looping or continuous sound of any kind, nor voice.
+audible by distance, still playing when someone joins halfway through. Nor looping or
+continuous sound of any kind, nor voice from a mod.
 
-**Instead:** one-shots keyed to things that happen. A press, an impact, a
-pickup.
+**Instead:** one-shots keyed to things that happen. A press, an impact, a pickup.
 
 ### No timers, no scheduling, no randomness
 
-Your `update` receives a delta and nothing else. You cannot ask what time it is, ask
-to be called back later, or get a random number from the host.
+Your tick receives a delta, and every hook's context carries two tick numbers:
+`raised-at`, the tick the event happened on, and `now`, the tick the handler runs on.
+That is the whole time surface — you cannot ask for the wall clock, ask to be called
+back later, or get a random number from the host.
 
-**Instead:** accumulate the delta yourself for anything time-based — that is what the
-[first tutorial](/start/first-balloon/) does. For randomness, seed a generator inside
-your own mod; just be aware that nothing makes it agree with any other peer.
-
-### Mods cannot find each other
-
-There is no way to ask which mod declares a given capability, or to declare that yours
-needs one. A mod that depends on another finds out at runtime, by the partner never
-answering.
-
-**Instead:** agree on a signal channel name and treat silence as absence. Channel names
-are exact strings, so a rename on either side breaks the pairing quietly.
+**Instead:** accumulate the delta yourself for anything time-based, and count in
+ticks where ordering matters — `raised-at` is the tick, so two events sort without
+any clock. For randomness, seed a generator inside your own mod; just be aware that
+nothing makes it agree with any other peer.
 
 ### The map answers one question
 
 You can ask a loaded map for its spawn points. That is the whole surface.
 
 There are no zones, no lookup of entities the map declares by name, no surface tags on
-a raycast hit, no navmesh or pathfinding, no reading or overriding gravity, fog or sky,
-and no events when a map loads or unloads.
+a raycast hit, no navmesh or pathfinding, no reading or overriding gravity, fog or sky.
 
 **Instead:** put your own geometry in the world as archetypes and use contact events
-and spatial queries against those.
+and [spatial queries](/modding/world/spatial/) against those.
 
-### Mods observe each other, they do not take part
+### The structural hooks are declared, and unfired
 
-A mod can hear what another mod announces, but it cannot intervene in another mod's
-decision — no vetoing an interaction, no adding a condition to somebody else's rule.
+The contract declares a set of structural hooks — an entity spawned, a map loaded, a
+body requested — each answering allow or deny. They are declared so a mod can already
+export them, and unfired: the mechanism that orders mods and acts on the verdicts
+does not exist yet, so today a mod observes other mods and does not take part in
+their decisions.
 
-**Instead:** cooperate by convention over the signal bus, and accept that the mod that
-owns a behaviour has the last word on it.
-
-**What is coming** is a composition layer: mods declare named handlers on structural
-events, an operator enables and orders them, and each returns allow or deny. Handlers
-will be pure — they see a snapshot and answer, rather than calling back into the host.
+**Instead:** cooperate by convention over [signals](/modding/messaging/signals/) and
+[requests](/modding/messaging/requests/), and accept that the mod that owns a
+behaviour has the last word on it. Composition hooks are intended →
+[Roadmap](/roadmap/).
 
 ### You cannot ask whether a handle is still good
 
 There is no way to test an entity handle for validity. A handle to something despawned
 fails when you use it.
 
-**Instead:** name things with `identify` and look them up with `find` each time, rather
-than holding a handle across ticks.
+**Instead:** give your entities ids with `set-id` and fetch them with `by-id` each
+time, rather than holding a handle across ticks.
 
-### Cross-mod reach is bytes only
+### Cross-mod reach is identity and bytes, not handles
 
-You cannot get a handle to another mod's entity. `find` is scoped to your own, and a
-ray that hits a foreign entity reports geometry without a handle. Mods cooperate by
-exchanging byte payloads over [signals](/build/signals/).
+You cannot get a handle to another mod's entity. `find` and `by-id` are scoped to your
+own ids, a ray that hits a foreign entity reports geometry without a handle, and an
+intersections probe names a foreign entity by its full id — still no handle. Mods
+cooperate by exchanging payloads over [signals](/modding/messaging/signals/) and
+[requests](/modding/messaging/requests/).
 
 This one is a deliberate boundary rather than a gap, and it is not going to be lifted:
 a handle is permission to mutate.
-
-### One language, in practice
-
-A mod is a WebAssembly component and the host does not care what wrote it, but every
-export is async, and Rust's bindings generator is the only one this has been done with
-end to end. See [Choosing a language](/build/languages/).
 
 ## What this leaves
 
 More than it sounds: race and parkour courses, king-of-the-hill, tag and infection,
 hide-and-seek with real occlusion, red-light/green-light, floor-is-lava, puzzle rooms,
-trigger-driven traps — anything built from moving props and per-player text.
+trigger-driven traps — anything built from moving props, per-player text and the keys
+you bind.
 
 The common shape is: watch positions, move things, recolour things, tell people what
 happened.
