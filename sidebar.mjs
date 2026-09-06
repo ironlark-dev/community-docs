@@ -1,17 +1,8 @@
-// The sidebar is derived from the pages themselves, not written by hand.
-//
-// A page's URL carries its area, and its frontmatter carries the job it does
-// (`kind`). Grouping here rather than by directory is what lets a page be
-// reclassified — an explanation that grows steps becomes a how-to — without its
-// URL moving. Generating at config time rather than per request keeps the sidebar
-// and the previous/next links derived from one array, so they cannot disagree.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 
 const ROOT = 'src/content/docs'
 
-/** Areas in sidebar order. `subdirs` nests one group per child directory,
- * in the stated order, below the area's own root pages. */
 const AREAS = [
   { dir: 'start', label: 'Start here' },
   { dir: 'server', label: 'Running a server' },
@@ -28,7 +19,6 @@ const AREAS = [
   },
 ]
 
-/** Kinds in reading order, with the sub-group label each gets. */
 const KINDS = [
   ['tutorial', 'Tutorials'],
   ['how-to', 'How to'],
@@ -36,7 +26,6 @@ const KINDS = [
   ['reference', 'Reference'],
 ]
 
-/** An area splits into per-kind groups only once a flat list stops being scannable. */
 const SUBGROUP_ABOVE = 6
 
 /** Enough of a YAML reader for the frontmatter these pages actually carry. */
@@ -81,12 +70,9 @@ const label = (p) => p['sidebar.label'] ?? p.title ?? p.slug
 const link = (p) => ({
   label: label(p),
   slug: p.slug,
-  // Only the exception is marked. Most pages describe what works today and carry
-  // nothing, which is what leaves a badge meaning something when one appears.
   ...(p.state ? { badge: { text: p.state, variant: 'caution' } } : {}),
 })
 
-/** The hub leads its own group; large flat lists split by kind. */
 function arrange(own, dir) {
   const hub = own.find((p) => p.slug === dir)
   const rest = own.filter((p) => p !== hub).sort(byOrderThenLabel)
@@ -118,9 +104,12 @@ export function sidebar() {
       continue
     }
 
-    // Root pages lead; each declared child directory nests as its own group.
-    const roots = own.filter((p) => !p.slug.slice(area.dir.length + 1).includes('/'))
-    const items = arrange(roots, area.dir)
+    const nested = (p) =>
+      area.subdirs.some(([sub]) => {
+        const dir = `${area.dir}/${sub}`
+        return p.slug === dir || p.slug.startsWith(`${dir}/`)
+      })
+    const items = arrange(own.filter((p) => !nested(p)), area.dir)
     for (const [sub, subLabel] of area.subdirs) {
       const dir = `${area.dir}/${sub}`
       const inside = own.filter((p) => p.slug === dir || p.slug.startsWith(`${dir}/`))
@@ -152,9 +141,7 @@ export function sidebar() {
   return groups
 }
 
-/** Every URL the site has ever published, pointing at the FINAL page it lives
- * at now. Entries are permanent: repointed when a target moves, never deleted,
- * and never allowed to chain into another redirect. */
+/** Permanent: repointed when a target moves, never deleted, never chained. */
 export const redirects = {
   '/getting-started': '/start/install',
   '/troubleshooting': '/modding/troubleshooting',
