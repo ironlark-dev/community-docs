@@ -72,7 +72,7 @@ This block pairs with a manifest whose `[declares.server]` lists exactly
 `#[ironlark::hooks("../mod.toml")]` holds the impl block and the manifest
 together, both ways: a hook the manifest declares that the block does not
 implement is a compile error, and so is a hook the block implements that the
-manifest does not declare. The manifest and the code cannot quietly disagree.
+manifest does not declare.
 
 ## The manifest routes the hooks
 

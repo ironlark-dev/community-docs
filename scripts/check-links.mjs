@@ -1,5 +1,3 @@
-// Every internal link in the built site must resolve to a page or a file.
-// Markdown links survive a rename silently; this is what notices.
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 

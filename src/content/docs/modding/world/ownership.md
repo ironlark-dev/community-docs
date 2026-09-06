@@ -69,7 +69,7 @@ instances to animate them. Neither author writes the other's name in code, and n
 configuration is involved.
 
 Spawning another mod's archetype gives you its content, not its behaviour. You get the
-prop; its author keeps the rules. That is usually exactly what you want.
+prop; its author keeps the rules.
 
 One thing this path never reaches: **a player's body**. A body's archetype is the host's
 own `character`, declared in no manifest, so declaring archetypes never becomes
@@ -142,10 +142,10 @@ set-component refused: 'acme:tag' is handling an event about 'user:bob', not
 about 'user:alice', whose body this is.
 ```
 
-This narrowness is deliberate. A standing read of every player's position would be a
-live positional feed of the whole server, so what you get is the player who just acted
-on you. An event lets you **affect** a player — move them, launch them — never keep
-them, give their body an id, destroy it, or take it over.
+A standing read of every player's position would be a live positional feed of the whole
+server, so what you get is the player who just acted on you. An event lets you
+**affect** a player — move them, launch them — never keep them, give their body an id,
+destroy it, or take it over.
 
 ## Decorating players, by declaring it
 
@@ -184,8 +184,8 @@ that row on any player's body.
   *read* every body, because a standing read of every body is a positional feed of the
   whole server.
 
-That is the one place this surface withholds a fact rather than an act, and it is
-deliberate. Everything else a mod wants to know about the world it may know — see
+That is the one place this surface withholds a fact rather than an act. Everything else
+a mod wants to know about the world it may know — see
 [spatial queries](/modding/world/spatial/), which report even foreign entities and
 participants, as identities rather than handles.
 

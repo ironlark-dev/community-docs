@@ -14,7 +14,7 @@ fresh port is negotiated for each player that connects. There is nothing to forw
 open, or write a firewall rule for.
 
 If you came from a game where hosting means opening a port, this is the one habit to
-drop. Time spent in a router admin panel is time wasted here.
+drop.
 
 ## Players connect to an identity, not an address
 

@@ -14,8 +14,7 @@ Ironlark is in closed pre-alpha, so builds are not published openly yet. Ask in
 something here is wrong.
 
 Windows and Linux are both first-class. Ironlark is developed on Linux — the engine
-and the first-party mods are written and tested there — so the Linux build is native
-rather than an afterthought, and it stays that way. Where a command differs between
+and the first-party mods are written and tested there. Where a command differs between
 the two, this site shows both.
 
 ## When it breaks
@@ -31,8 +30,7 @@ you debug anything else.
 This gets better. Every part of it is a thing we intend to stop doing, and the list of
 ways a build can be wrong gets shorter as the platform settles. Until then, if you hit
 something, say so in [Discord](https://discord.gg/jAQU93uMy4) and we will help you as
-quickly as we can. You are a small group and we would rather unblock you directly than
-have you lose an evening.
+quickly as we can.
 
 ## The launcher
 
@@ -100,7 +98,7 @@ and the SDK, one line in your mod's `Cargo.toml`:
 
 ```toml
 [dependencies]
-ironlark = { git = "https://github.com/ironlark-dev/ironlark-rust" }
+ironlark = "0.1"
 ```
 
 The host loads WebAssembly components and does not care what language wrote them, but

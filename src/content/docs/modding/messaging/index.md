@@ -5,6 +5,7 @@ kind: explanation
 area: modding
 sidebar:
   order: 0
+  label: "Signals and requests"
 ---
 
 Mods never hold each other's entities and never call each other's functions

@@ -1,7 +1,3 @@
-// Source-level checks on the pages themselves, for the classes of defect a link
-// checker cannot see: text in the wrong language, links into records that are not
-// published, links to a URL that only still works because a redirect catches it,
-// and pages that never say what they are.
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -12,10 +8,7 @@ const ROOT = 'src/content/docs'
 /** Non-ASCII characters this site deliberately uses. Anything else is a mistake. */
 const ALLOWED = new Set([...'×—…→─│└'])
 
-/**
- * Documentation that is not published. The site is public and these are not, so a
- * link to one is a dead end for every reader who is not on the team.
- */
+/** Not published: a link to one is a dead end for a reader outside the team. */
 const INTERNAL = /\b(adr[-\s/]?\d{2,}|git\.ywa\.red|\/docs\/design\/|internal wiki)\b/i
 
 const problems = []
@@ -30,14 +23,12 @@ function walk(dir) {
   return found
 }
 
-/** Line and column of an index into the file, for an error a person can act on. */
 function at(text, index) {
   const before = text.slice(0, index)
   const line = before.split('\n').length
   return `${line}:${index - before.lastIndexOf('\n')}`
 }
 
-/** Spans of fenced code, where box drawings and foreign identifiers are legitimate. */
 function fences(text) {
   const spans = []
   for (const match of text.matchAll(/^```[\s\S]*?^```/gm)) {
