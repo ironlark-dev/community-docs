@@ -15,10 +15,20 @@ export default defineConfig({
         dark: './src/assets/logo-dark.svg',
         alt: 'Ironlark',
       },
-      favicon: '/favicon.svg',
+      favicon: '/mark-on-dark-32.png',
       head: [
-        { tag: 'link', attrs: { rel: 'icon', type: 'image/x-icon', sizes: '32x32', href: '/favicon.ico' } },
-        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '96x96', href: '/mark-on-dark-96.png' } },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'icon',
+            type: 'image/png',
+            sizes: '32x32',
+            href: '/mark-on-light-32.png',
+            media: '(prefers-color-scheme: light)',
+          },
+        },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/mark-on-dark-180.png' } },
         { tag: 'link', attrs: { rel: 'manifest', href: '/site.webmanifest' } },
         { tag: 'meta', attrs: { name: 'theme-color', content: '#1b0300' } },
         {
