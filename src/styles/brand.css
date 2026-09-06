@@ -13,9 +13,9 @@
   --sl-color-gray-7: oklch(17.5% 0.007 262);
   --sl-color-black: oklch(14.5% 0.005 265);
 
-  --sl-color-accent-low: oklch(27% 0.06 38);
-  --sl-color-accent: oklch(57.5% 0.135 38);
-  --sl-color-accent-high: oklch(65% 0.15 38);
+  --sl-color-accent-low: oklch(27% 0.06 42);
+  --sl-color-accent: oklch(57.5% 0.135 42);
+  --sl-color-accent-high: oklch(65% 0.15 42);
 
   --sl-color-bg-sidebar: var(--sl-color-gray-7);
   --sl-color-banner-bg: var(--sl-color-gray-6);
@@ -34,9 +34,9 @@
   --sl-color-gray-7: oklch(95% 0.002 265);
   --sl-color-black: oklch(97% 0.002 265);
 
-  --sl-color-accent-low: oklch(92% 0.03 38);
-  --sl-color-accent: oklch(46% 0.16 35);
-  --sl-color-accent-high: oklch(35% 0.12 38);
+  --sl-color-accent-low: oklch(92% 0.03 42);
+  --sl-color-accent: oklch(46% 0.16 40);
+  --sl-color-accent-high: oklch(35% 0.12 42);
 
   --sl-color-bg-sidebar: var(--sl-color-gray-7);
   --sl-color-banner-bg: var(--sl-color-gray-6);
