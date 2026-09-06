@@ -5,6 +5,7 @@ kind: explanation
 area: modding
 sidebar:
   order: 0
+  label: "What the server half does"
 ---
 
 The world belongs to a mod's server half. One instance of that half runs on the machine

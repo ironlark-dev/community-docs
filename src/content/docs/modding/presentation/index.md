@@ -5,6 +5,7 @@ kind: explanation
 area: modding
 sidebar:
   order: 0
+  label: "Reaching the player"
 ---
 
 Everything on this page is about the moment a mod meets a person: a sound in

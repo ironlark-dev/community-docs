@@ -112,4 +112,4 @@ other bundled mods are ordinary optional content; a server
 ## Your own namespace
 
 While developing locally, pick an author segment and stay in it — your handle,
-or anything honest. It states *placement*; provenance arrives with publishing.
+or anything honest.

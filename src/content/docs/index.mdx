@@ -2,11 +2,17 @@
 title: "Ironlark"
 description: "How Ironlark works, and how to run it, build on it and extend it."
 template: splash
+head:
+  - tag: title
+    content: Ironlark
 hero:
-  tagline: A multiplayer game platform. The engine is a thin host — maps, physics, networking, a WebAssembly modding runtime — and the gameplay on top of it is content rather than engine code.
+  image:
+    light: ../../assets/logo-light.svg
+    dark: ../../assets/logo-dark.svg
+  tagline: "A multiplayer game platform where the whole game is mods. Built with Rust, Bevy and WebAssembly Components.<br><br>Inspired by Garry's Mod and Roblox."
   actions:
-    - text: Run a server
-      link: /start/run-a-server/
+    - text: Start here
+      link: /start/
       icon: right-arrow
       variant: primary
     - text: Write your first mod
@@ -15,56 +21,75 @@ hero:
       variant: minimal
 ---
 
-import { CardGrid, Card, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 
-## Where Ironlark is
+## A whole server half
 
-Ironlark is in closed pre-alpha. The host runs, maps load, mods run, and people play
-on it. Large parts of the platform are not built yet: there is no dedicated server,
-and you host by running the game. Mods are written in Rust with the `ironlark` SDK —
-public and Apache-2.0, at
-[github.com/ironlark-dev/ironlark-rust](https://github.com/ironlark-dev/ironlark-rust)
-— and [your first mod](/modding/first-mod/) is a git dependency away.
+<div class="split">
 
-These docs describe what exists today and say plainly where the edge is. Both lists
-are public: [the boundary today](/boundary/), and [the roadmap](/roadmap/).
+```rust
+use ironlark::server::prelude::*;
 
-## What do you want to do
+// Mints `archetype::Sign` from the row declared in mod.toml.
+ironlark::declares!("../mod.toml");
+
+struct Guestbook;
+
+impl ServerMod for Guestbook {
+    async fn on_join(_ctx: Context, player: Player) {
+        let signed = session::participants().await.len() as f32;
+        let at = SpawnPoint {
+            position: Vec3::new(1.5 * signed, 2.0, 0.0),
+            yaw: 0.0,
+        };
+        if let Ok(sign) = Entity::spawn(archetype::Sign, at).await {
+            let _ = sign.set_label(&format!("{player}")).await;
+        }
+    }
+}
+
+ironlark::export_server!(Guestbook);
+```
+
+<div>
+
+A player joins. A sign appears in the world with their number on it, and
+every player in the session sees it. The signs stand in a row, so the row
+shows who joined and in what order.
+
+[What a mod is](/modding/) — [every function the host offers one](/reference/)
+
+</div>
+
+</div>
+
+## The first hour
 
 <CardGrid>
-  <LinkCard title="Get started" href="/start/"
-    description="Install the game, get it running on Linux, and host a session somebody has joined." />
-  <LinkCard title="Run a server" href="/server/"
-    description="Decide what a session runs, grant authority, and work out why somebody cannot join." />
-  <LinkCard title="Make something" href="/modding/"
-    description="Write a mod: put an object in the world, write the rules of a session, author a map." />
-  <LinkCard title="Look something up" href="/reference/"
-    description="Every function the host offers a mod, and every function a mod must export." />
-</CardGrid>
-
-## What you can build
-
-<CardGrid>
-  <Card title="Maps" icon="pencil">
-    Worlds authored in Blender as glTF, plus a small manifest. Host-owned data, not code.
-  </Card>
-  <Card title="Mods" icon="puzzle">
-    WebAssembly components the host loads. They spawn things, react to touch and input, and talk to each other over a bus.
-  </Card>
-  <Card title="Gamemodes" icon="star">
-    A mod that holds the gamemode role. It owns the rules a session plays by, including where players appear.
-  </Card>
-</CardGrid>
-
-## New here
-
-<CardGrid>
+  <LinkCard title="Install and run" href="/start/install/"
+    description="Get a build, log in, and know where the game puts things." />
   <LinkCard title="Run a server" href="/start/run-a-server/"
-    description="Nothing to a session somebody has joined. No port to forward." />
-  <LinkCard title="Write your first mod" href="/modding/first-mod/"
-    description="An object in the world that moves, from an empty directory." />
+    description="Host a session and have somebody join it. No port to forward." />
+  <LinkCard title="Your first mod" href="/modding/first-mod/"
+    description="From an empty directory to a marker standing in the world." />
+</CardGrid>
+
+## Before you plan anything large
+
+<CardGrid>
   <LinkCard title="The boundary today" href="/boundary/"
-    description="What the engine cannot do yet, and what works instead. Read it before designing." />
-  <LinkCard title="Glossary" href="/glossary/"
-    description="Mod, gamemode, archetype, realm, signal — one or two sentences each." />
+    description="What the engine cannot do yet, and the shape that works instead." />
+  <LinkCard title="Roadmap" href="/roadmap/"
+    description="Shipped, committed, intended. No dates." />
+</CardGrid>
+
+## The areas
+
+<CardGrid>
+  <LinkCard title="Modding" href="/modding/"
+    description="What a mod is, its two halves, and every page about making one." />
+  <LinkCard title="Running a server" href="/server/"
+    description="Choose what a session runs, grant authority, and work out why somebody cannot join." />
+  <LinkCard title="Interface reference" href="/reference/"
+    description="Every function the host offers a mod, and every one a mod must export." />
 </CardGrid>

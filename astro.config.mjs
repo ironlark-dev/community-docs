@@ -10,6 +10,32 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Ironlark',
+      logo: {
+        light: './src/assets/logo-light.svg',
+        dark: './src/assets/logo-dark.svg',
+        alt: 'Ironlark',
+      },
+      favicon: '/favicon.svg',
+      head: [
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/x-icon', sizes: '32x32', href: '/favicon.ico' } },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' } },
+        { tag: 'link', attrs: { rel: 'manifest', href: '/site.webmanifest' } },
+        { tag: 'meta', attrs: { name: 'theme-color', content: '#1b0300' } },
+        {
+          tag: 'script',
+          content: [
+            "addEventListener('dragstart', e => { if (e.target.tagName === 'IMG') e.preventDefault() })",
+            "addEventListener('click', e => {",
+            "  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return",
+            "  const a = e.target.closest('a[href]')",
+            "  if (!a || a.hasAttribute('download') || a.origin === location.origin) return",
+            "  e.preventDefault()",
+            "  window.open(a.href, '_blank', 'noopener')",
+            "})",
+          ].join('\n'),
+        },
+      ],
+      customCss: ['./src/styles/brand.css'],
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/ironlark-dev' },
         { icon: 'discord', label: 'Discord', href: 'https://discord.gg/jAQU93uMy4' },
@@ -19,9 +45,6 @@ export default defineConfig({
         baseUrl: 'https://github.com/ironlark-dev/community-docs/edit/master/',
       },
       lastUpdated: true,
-      // Carries the pre-alpha notice onto every page from one place. A notice
-      // repeated per page is a background colour; pages mark only the exception,
-      // through the `state` frontmatter field.
       routeMiddleware: './src/routeData.ts',
       sidebar: sidebar(),
     }),

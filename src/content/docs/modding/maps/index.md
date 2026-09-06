@@ -5,6 +5,7 @@ kind: how-to
 area: modding
 sidebar:
   order: 0
+  label: "Building a map"
 ---
 
 A **map** is a world you author as data — geometry plus a small manifest. It

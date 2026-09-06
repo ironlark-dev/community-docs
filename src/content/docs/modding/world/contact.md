@@ -9,9 +9,8 @@ sidebar:
 ---
 
 Contact is the mechanism behind pressure plates, checkpoints, finish lines, capture
-zones, lava floors and portals. It is the most useful thing in the engine for gameplay
-that happens *somewhere*. Where [interaction](/modding/world/interaction/) is the aimed
-press, contact is the physical touch — no key involved.
+zones, lava floors and portals. Where [interaction](/modding/world/interaction/) is the
+aimed press, contact is the physical touch — no key involved.
 
 ## Opt in, per archetype
 
