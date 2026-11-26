@@ -116,14 +116,11 @@ impl ServerMod for Threshold {
         _point: Vec3,
         edge: ContactEdge,
     ) {
-        let now = INSIDE.update(|count| {
-            match edge {
-                ContactEdge::Started => *count += 1,
-                ContactEdge::Ended => *count = count.saturating_sub(1),
-            }
-            *count
+        INSIDE.update(|count| match edge {
+            ContactEdge::Started => count + 1,
+            ContactEdge::Ended => count.saturating_sub(1),
         });
-        log::info!("{now} standing in the doorway");
+        log::info!("{} standing in the doorway", INSIDE.get());
     }
 }
 ```

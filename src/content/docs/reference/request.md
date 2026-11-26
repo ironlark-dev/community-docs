@@ -26,8 +26,8 @@ mod's server half answers, and backpressure here is what the caller asked for.
 The id comes from [resolve.request](/reference/resolve/#request); routing is
 already established by the declaration, so the payload carries no address.
 
-Payload and answer are capped, and the refusal carries the cap. Refuses, as
-the [error record](/reference/types/#error):
+The payload is capped, and the refusal carries the cap; the answer is not
+size-bound. Refuses, as the [error record](/reference/types/#error):
 
 - an over-cap payload — the cap is 64 KiB;
 - a forged, stale or undeclared id;

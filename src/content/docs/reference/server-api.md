@@ -113,9 +113,9 @@ on-request: async func(ctx: context, player: borrow<player>, request: request-id
 
 The answering side of [request](/reference/request/). `request` is one this
 mod declared; routing already established whose it is. `player` is the one
-whose client half asked, lent for this call. Payload and answer are capped,
-and the refusal carries the cap; an error returned here is what the asking
-half's `request` call receives.
+whose client half asked, lent for this call. The payload is capped, and the
+refusal carries the cap; an error returned here is what the asking half's
+`request` call receives. The answer is not size-bound.
 
 ## `on-signal`
 
