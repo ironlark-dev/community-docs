@@ -20,7 +20,7 @@ vocabulary is [the glossary's](/glossary/); how work reaches a mod at all is
 | Per-mod signal inbox | 64 deliveries | a delivery to the full inbox is shed, loudly |
 | Raises held while a realm's mods still load | 256 | the raise is refused |
 | A signal name | 256 bytes | the name is refused |
-| A request's payload, and its answer | 64 KiB each | refused, with the cap in the answer |
+| A request's payload | 64 KiB | refused, with the cap in the answer |
 | Requests queued per mod | 32 | the arriving request is answered with a refusal instead of queued |
 | Presses and touches queued per mod | 64 | stale presses are shed first; a still-queued touch pair is cancelled whole |
 | Joins and leaves queued per mod | 32 | never shed — a mod that far behind is failed instead |
